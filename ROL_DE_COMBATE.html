@@ -1,363 +1,458 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rol de Combate PRO - Gestión Integral v12.3</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        :root { --primary: #0f172a; --accent: #2563eb; }
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; text-align: left; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-        .shadow-pro { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
-        .animate-pro { animation: fadeIn 0.3s ease forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+import React, { useState, useMemo } from 'react';
+import { 
+  Search, 
+  User, 
+  Phone, 
+  MapPin, 
+  ChevronRight, 
+  Calendar,
+  ShieldCheck,
+  FileSpreadsheet,
+  RefreshCw,
+  Upload,
+  Info,
+  HeartPulse,
+  Users,
+  Home,
+  GraduationCap,
+  Activity
+} from 'lucide-react';
 
-        @media print {
-            .no-print { display: none !important; }
-            body { background: white !important; margin: 0; padding: 0; }
-            .print-page { padding: 1cm; background: white !important; color: black !important; }
-            @page { size: A4 portrait; margin: 0; }
-        }
+// --- UTILIDADES DE PROCESAMIENTO ---
+const calculateAge = (birthDate) => {
+  if (!birthDate || birthDate === "S/D" || birthDate === "") return "S/D";
+  // Manejar diferentes formatos de fecha (YYYY-MM-DD o DD/MM/YYYY)
+  let birth;
+  if (birthDate.includes('/')) {
+    const [d, m, y] = birthDate.split('/');
+    birth = new Date(`${y}-${m}-${d}`);
+  } else {
+    birth = new Date(birthDate);
+  }
+  
+  if (isNaN(birth.getTime())) return "S/D";
+  const now = new Date("2026-04-08"); 
+  let age = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+  return age;
+};
 
-        .excel-table th { @apply border border-slate-300 bg-slate-100 px-4 py-3 text-[10px] font-black uppercase text-slate-600 tracking-wider sticky top-0 z-10 text-left; }
-        .excel-table td { @apply border border-slate-200 px-4 py-3 text-xs text-slate-800 whitespace-nowrap font-medium text-left; }
-        
-        #safetyLoader { position: fixed; inset: 0; background: #0f172a; z-index: 999; display: flex; align-items: center; justify-content: center; flex-direction: column; color: white; transition: opacity 0.4s ease; padding: 20px; }
-        #uiFeedback { position: fixed; bottom: 2rem; right: 2rem; z-index: 500; display: flex; flex-direction: column; gap: 0.5rem; }
-        .feedback-item { padding: 1rem 1.5rem; border-radius: 1rem; background: #1e293b; color: white; font-size: 0.75rem; font-weight: 700; border-left: 4px solid #2563eb; animation: fadeIn 0.3s ease; }
-        
-        #spyLog { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 20px; width: 100%; max-width: 600px; font-family: 'JetBrains Mono', monospace; font-size: 11px; margin-top: 30px; height: 180px; overflow-y: auto; color: #cbd5e1; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
-        .log-error { color: #f87171; font-weight: bold; }
-        .log-success { color: #4ade80; font-weight: bold; }
-        .log-info { color: #60a5fa; }
-        .log-warn { color: #fbbf24; }
-    </style>
-</head>
-<body class="overflow-x-hidden">
+const standardizeDNI = (dni) => {
+  if (!dni) return "";
+  return dni.toString().replace(/[^0-9]/g, '');
+};
 
-    <div id="uiFeedback"></div>
+// --- DATOS PRE-CARGADOS (EXTRACCIÓN EXTENSA DE TUS ARCHIVOS) ---
+const INITIAL_RECORDS = [
+  // 3er Año - Basado en ROL DE COMBATE (3)
+  {
+    "Apellido": "FRIAS",
+    "Nombre": "ARIEL ARMANDO",
+    "DNI": "44742442",
+    "FechaNac": "2003-04-24",
+    "Año": "3er Año",
+    "CUIL": "20447424429",
+    "Sexo": "MASCULINO",
+    "Est. Civil": "SOLTERO/A",
+    "Legajo": "20342",
+    "Estatura": "169",
+    "Peso": "61",
+    "IMC": "21.36",
+    "Estado IMC": "NORMAL",
+    "Grupo Sangre": "0 POSITIVO (+)",
+    "UR": "U.R. CAPITAL",
+    "Instagram": "frias_ariel17",
+    "Jerarquia": "CADETE",
+    "Niv Academico": "SECUNDARIO"
+  },
+  {
+    "Apellido": "RAMOS",
+    "Nombre": "TOBÍAS AGUSTÍN",
+    "DNI": "45196805",
+    "FechaNac": "2004-03-31",
+    "Año": "3er Año",
+    "CUIL": "20451968050",
+    "Legajo": "20344",
+    "Estatura": "174",
+    "Peso": "75",
+    "IMC": "24.77",
+    "Estado IMC": "NORMAL",
+    "Grupo Sangre": "0 POSITIVO (+)",
+    "UR": "U.R. CAPITAL",
+    "Jerarquia": "CADETE"
+  },
+  {
+    "Apellido": "SORIA",
+    "Nombre": "LUCAS",
+    "DNI": "45184734",
+    "FechaNac": "2003-12-17",
+    "Año": "3er Año",
+    "CUIL": "20-45184734-2",
+    "Legajo": "20351",
+    "Estatura": "173",
+    "Peso": "78",
+    "IMC": "26.06",
+    "Estado IMC": "SOBREPESO",
+    "Localidad": "BOCA DEL TIGRE",
+    "Departamento": "BURRUYACU",
+    "Domicilio": "BARRIO PORTAL DEL CHAÑAR MZ. E CASA 8",
+    "Comisaria": "COMISARIA DEL CHAÑAR",
+    "Celular": "3813937426",
+    "Hermanos": "['H1:SORIA FABIAN ESTEBAN', 'H2:SORIA AIXA YANETH']",
+    "Jerarquia": "CADETE"
+  },
+  // 2do Año - Basado en ROLL DE COMBATE I AÑO
+  {
+    "Apellido": "SORIA",
+    "Nombre": "LEONEL",
+    "DNI": "46145229",
+    "FechaNac": "2004-08-01",
+    "Año": "2do Año",
+    "CUIL": "S/D",
+    "Localidad": "Lastenia",
+    "Domicilio Real": "Lastenia, B° La cerámica",
+    "Celular": "3815833923",
+    "Correo Electronico": "soria.leonel62@gmail.com",
+    "Título Secundario": "POLIMODAL MODALIDAD ECONOMIA Y GESTIÓN",
+    "Institucion": "EESCUELA DE COMERCIO DE BANDA DEL RIO SALI",
+    "Madre": "Galvan Lorena Cecilia (32741747)",
+    "Padre": "Soria Juan Omar (30109756)"
+  },
+  {
+    "Apellido": "SUELDO",
+    "Nombre": "RODRIGO GASTÓN",
+    "DNI": "45186845",
+    "FechaNac": "2004-01-19",
+    "Año": "2do Año",
+    "Celular": "3815460709",
+    "Localidad": "Lastenia",
+    "Estado Civil": "SOLTERO/A",
+    "Grupo Sanguíneo": "0 POSITIVO (+)",
+    "CUIL": "20451868452"
+  }
+];
 
-    <!-- CARGADOR SENIOR DE ALTA DISPONIBILIDAD -->
-    <div id="safetyLoader">
-        <div class="w-20 h-20 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <p class="mt-8 text-[12px] font-black uppercase tracking-[0.5em] text-blue-400 animate-pulse" id="loaderMsg">Estableciendo Enlace Maestro...</p>
-        
-        <div id="spyLog">
-            <div class="text-blue-500 font-black border-b border-white/10 pb-2 mb-2 uppercase text-[10px]">Monitor de Sincronización Institucional v12.3</div>
+const parseCSV = (text) => {
+  const lines = text.split(/\r?\n/);
+  if (lines.length === 0) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+  return lines.slice(1).filter(line => line.trim() !== "").map(line => {
+    const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    const obj = {};
+    headers.forEach((header, i) => {
+      obj[header] = values[i] ? values[i].trim().replace(/"/g, '') : "";
+    });
+    return obj;
+  });
+};
+
+const App = () => {
+  const [extraData, setExtraData] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState("TODOS");
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  const unifiedData = useMemo(() => {
+    const masterMap = new Map();
+
+    // Función para encontrar valor en un objeto ignorando mayúsculas/espacios
+    const findValue = (obj, pattern) => {
+      const key = Object.keys(obj).find(k => k.toUpperCase().includes(pattern.toUpperCase()));
+      return key ? obj[key] : null;
+    };
+
+    // Procesar todos los registros (Pre-cargados + Subidos)
+    const allSources = [...INITIAL_RECORDS, ...extraData];
+
+    allSources.forEach(row => {
+      // Identificar DNI como llave única
+      const dni = standardizeDNI(findValue(row, "DNI") || findValue(row, "DOCUMENTO") || row.DNI);
+      if (!dni) return;
+
+      const existing = masterMap.get(dni) || {};
+      
+      // Normalización para la vista rápida
+      const normalized = {
+        Apellido: (findValue(row, "APELLIDO") || existing.Apellido || "S/D").toUpperCase(),
+        Nombre: (findValue(row, "NOMBRE") || existing.Nombre || "S/D").toUpperCase(),
+        DNI: dni,
+        FechaNac: findValue(row, "FECHA NAC") || findValue(row, "NACIMIENTO") || existing.FechaNac || "S/D",
+        Año: row.Año || (findValue(row, "Legajo") ? "3er Año" : "2do Año") || existing.Año,
+        Celular: findValue(row, "CELULAR") || findValue(row, "TELÉFONO") || existing.Celular || "-",
+        Localidad: findValue(row, "LOCALIDAD") || existing.Localidad || "-",
+        Legajo: findValue(row, "LEGAJO") || existing.Legajo || "-",
+        CUIL: findValue(row, "CUIL") || existing.CUIL || "-",
+      };
+
+      // Fusionar TODAS las columnas sin perder información
+      masterMap.set(dni, { ...existing, ...row, ...normalized });
+    });
+
+    return Array.from(masterMap.values()).map(user => ({
+      ...user,
+      EdadActual: calculateAge(user.FechaNac)
+    }));
+  }, [extraData]);
+
+  const filteredData = useMemo(() => {
+    return unifiedData.filter(user => {
+      const searchStr = `${user.Apellido} ${user.Nombre} ${user.DNI} ${user.Localidad} ${user.Legajo}`.toLowerCase();
+      const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
+      const matchesCourse = selectedCourse === "TODOS" || user.Año === selectedCourse;
+      return matchesSearch && matchesCourse;
+    });
+  }, [unifiedData, searchTerm, selectedCourse]);
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const data = parseCSV(event.target.result);
+      setExtraData(prev => [...prev, ...data]);
+    };
+    reader.readAsText(file);
+  };
+
+  // Función para agrupar campos del modal
+  const getFieldGroups = (user) => {
+    const categories = {
+      Identidad: ["DNI", "CUIL", "SEXO", "FECHA NAC", "EST. CIVIL", "ESTADO CIVIL", "NACIONALIDAD", "RELIGIÓN"],
+      Salud: ["ESTATURA", "PESO", "IMC", "ESTADO IMC", "GRUPO SANGRE", "GRUPO SANGUÍNEO", "ENFERMEDADES", "TRAUMAS", "TABACO", "ALCOHOL", "ACT FISICA", "DIETA"],
+      Domicilio: ["DOMICILIO", "DOMICILIO REAL", "LOCALIDAD", "DEPARTAMENTO", "COMISARIA", "COMISARIA JURISDICCIONAL", "ALQUILA"],
+      Familiar: ["MADRE", "PADRE", "HERMANOS", "CONVIVIENTES", "ANT FAMILIARES"],
+      Academico: ["NIV ACADEMICO", "TITULO", "TÍTULO SECUNDARIO", "NOMBRE DE INSTITUCION", "OTRO", "TRABAJO", "JERARQUIA", "LEGAJO", "PRONTUARIO"]
+    };
+
+    const grouped = {};
+    const usedKeys = new Set(['_source', '_merged', 'EdadActual', 'Apellido', 'Nombre', 'DNI', 'Año', 'Localidad', 'Celular', 'Legajo', 'FechaNac']);
+
+    Object.entries(categories).forEach(([cat, keywords]) => {
+      grouped[cat] = Object.entries(user).filter(([key]) => {
+        if (usedKeys.has(key)) return false;
+        const isMatch = keywords.some(kw => key.toUpperCase().includes(kw));
+        if (isMatch) usedKeys.add(key);
+        return isMatch;
+      });
+    });
+
+    // Lo que sobre va a "Otros"
+    grouped.Otros = Object.entries(user).filter(([key]) => !usedKeys.has(key));
+
+    return grouped;
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans flex">
+      {/* Sidebar Táctico */}
+      <aside className="hidden lg:flex w-72 bg-[#0f172a] text-white p-6 flex-col flex-shrink-0 sticky top-0 h-screen border-r border-white/5 shadow-2xl">
+        <div className="flex items-center gap-3 mb-10 px-2">
+          <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-500/30">
+            <ShieldCheck className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-sm font-black tracking-[0.2em] uppercase text-blue-400">Sistema Rol</h1>
+            <h1 className="text-lg font-bold tracking-tight text-white/90">de Combate</h1>
+          </div>
         </div>
 
-        <div class="mt-8 flex gap-4">
-            <button id="skipLoading" onclick="window.forceHideLoader()" class="px-8 py-3 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-full text-[10px] font-black uppercase tracking-widest transition-all border border-white/5">Acceso Offline</button>
-            <button onclick="window.syncMasterData()" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-900/40">Reintentar Enlace</button>
+        <nav className="space-y-1.5 flex-1">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 px-2">Filtrar por Curso</p>
+          {["TODOS", "2do Año", "3er Año"].map(course => (
+            <button
+              key={course}
+              onClick={() => setSelectedCourse(course)}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${selectedCourse === course ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+            >
+              <span className="font-semibold text-sm">{course}</span>
+              {selectedCourse === course && <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />}
+            </button>
+          ))}
+        </nav>
+
+        <div className="pt-6 border-t border-white/5 mt-auto">
+          <div className="relative overflow-hidden">
+            <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors cursor-pointer group">
+              <Upload className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
+              <div>
+                <p className="text-xs font-bold">Importar Archivo</p>
+                <p className="text-[9px] text-slate-500">Cargar Excel (CSV)</p>
+              </div>
+            </div>
+            <input type="file" accept=".csv" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+          </div>
         </div>
-    </div>
+      </aside>
 
-    <div id="app" class="min-h-screen flex flex-col lg:flex-row no-print">
-        
-        <!-- SIDEBAR -->
-        <aside class="w-full lg:w-80 bg-[#0f172a] text-white flex flex-col lg:sticky lg:top-0 h-screen shadow-2xl z-50 text-left text-left">
-            <div class="p-8 border-b border-white/5 flex items-center gap-4 text-left">
-                <div class="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-500/40 text-left">
-                    <svg class="w-6 h-6 text-white text-left" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04a11.357 11.357 0 00-1.573 7.853c.523 5.51 5.963 10.414 10.191 12.117a10.598 10.598 0 003.978 0c4.227-1.703 9.668-6.607 10.191-12.117a11.356 11.356 0 00-1.573-7.853z"/></svg>
-                </div>
-                <div class="text-left">
-                    <h1 class="text-sm font-black tracking-tighter leading-none uppercase italic text-left">Rol de Combate</h1>
-                    <p class="text-[9px] font-medium opacity-30 uppercase tracking-widest mt-1 text-left text-left">Senior Edition v12.3</p>
-                </div>
+      {/* Main View */}
+      <main className="flex-1 min-w-0">
+        <header className="bg-white/70 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-40 p-4 lg:p-6 flex flex-col md:flex-row items-center gap-4">
+          <div className="relative w-full max-w-xl group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-600 transition-colors" />
+            <input 
+              type="text"
+              placeholder="Buscar por DNI, Apellido o Localidad..."
+              className="w-full pl-12 pr-4 py-3 bg-slate-100 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all outline-none font-medium"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2 ml-auto">
+            <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 flex flex-col items-center min-w-[80px]">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Total</span>
+              <span className="text-lg font-bold text-slate-900">{filteredData.length}</span>
             </div>
-
-            <div class="flex-1 overflow-y-auto p-6 space-y-8 text-left text-left">
-                <div class="text-left">
-                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-4 text-left text-left">Filtrado por Año</span>
-                    <nav id="courseFilters" class="space-y-1.5 text-left text-left"></nav>
-                </div>
-
-                <div class="pt-6 border-t border-white/5 text-left text-left">
-                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-4 text-left text-left">Mantenimiento</span>
-                    <button onclick="window.syncMasterData()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all mb-4 shadow-lg shadow-blue-900/40 text-left flex justify-center">Sincronizar Drive</button>
-                    
-                    <label class="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-blue-600/20 transition-all cursor-pointer group text-left text-left">
-                        <div class="text-blue-400 group-hover:scale-110 transition-transform text-left"><svg class="w-5 h-5 text-left" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg></div>
-                        <div class="text-left text-left">
-                            <p class="text-xs font-bold leading-tight text-left text-left">Cargar Excel Local</p>
-                            <p class="text-[8px] opacity-40 uppercase text-left text-left">Desde tu PC</p>
-                        </div>
-                        <input type="file" accept=".xlsx, .xls, .csv" class="hidden" id="fileUploader">
-                    </label>
-                </div>
+            <div className="bg-slate-900 px-4 py-2 rounded-xl shadow-lg shadow-slate-200 flex flex-col items-center text-white min-w-[100px]">
+              <span className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">Hoy</span>
+              <span className="text-sm font-bold">08/04/2026</span>
             </div>
-            
-            <div class="p-6 border-t border-white/5 text-center text-left">
-                <div id="onlineBadge" class="text-[10px] font-black uppercase text-slate-600 italic text-left text-left">Enlace Institucional Activo</div>
-            </div>
-        </aside>
+          </div>
+        </header>
 
-        <!-- MAIN VIEW -->
-        <main class="flex-1 flex flex-col min-w-0 bg-slate-50 text-left text-left">
-            <header class="bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-40 p-6 flex flex-col xl:flex-row items-center justify-between gap-6 text-left text-left text-left">
-                <div class="flex items-center gap-4 w-full xl:w-auto flex-1 max-w-5xl text-left text-left text-left">
-                    <div class="relative flex-1 text-left text-left text-left">
-                        <svg class="w-5 h-5 absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-left" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                        <input type="text" id="searchInput" placeholder="Búsqueda global instantánea..." class="w-full pl-14 pr-6 py-4 bg-slate-100 border-2 border-transparent rounded-2xl focus:bg-white focus:border-blue-500/20 transition-all outline-none font-semibold text-sm text-left text-left">
-                    </div>
-                    <div class="flex bg-slate-200 p-1 rounded-xl no-print text-left text-left text-left text-left">
-                        <button onclick="setView('grid')" id="btnViewGrid" class="p-2.5 rounded-lg transition-all bg-white shadow-sm text-blue-600 text-left text-left"><svg class="w-5 h-5 text-left" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-width="2" stroke-linecap="round"/></svg></button>
-                        <button onclick="setView('table')" id="btnViewTable" class="p-2.5 rounded-lg transition-all text-slate-500 text-left text-left"><svg class="w-5 h-5 text-left" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h18M3 14h18" stroke-width="2"/></svg></button>
-                    </div>
-                </div>
-                <div class="flex items-center gap-4 no-print text-left text-left text-left">
-                    <div class="bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center text-left text-left text-left text-left">
-                        <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 text-center text-left text-left">Legajos</span>
-                        <span class="text-xl font-black text-slate-900 leading-none text-left text-left text-left" id="visibleCounter">0</span>
-                    </div>
-                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl flex items-center gap-3 transition-all shadow-lg text-left text-left text-left">
-                        <svg class="w-5 h-5 text-left" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                        <span class="text-xs font-black uppercase tracking-widest text-left text-left text-left text-left text-left">Imprimir</span>
-                    </button>
-                </div>
-            </header>
-            <div id="mainContent" class="p-8 flex-1 overflow-auto animate-pro text-left text-left text-left text-left text-left"></div>
-        </main>
-    </div>
+        <div className="p-4 lg:p-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+          {filteredData.map((user, idx) => (
+            <div 
+              key={idx} 
+              className="bg-white rounded-[1.5rem] p-5 border border-slate-200 hover:border-blue-500/30 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group relative overflow-hidden h-full flex flex-col"
+              onClick={() => setSelectedUser(user)}
+            >
+              {/* Decoración Superior */}
+              <div className={`absolute top-0 left-0 w-1 h-full ${user.Año === "3er Año" ? 'bg-amber-400' : 'bg-blue-500'}`} />
 
-    <!-- MODAL DE DETALLE -->
-    <div id="modalContainer" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 lg:p-10 no-print text-left text-left text-left">
-        <div class="absolute inset-0 bg-slate-950/95 backdrop-blur-xl text-left text-left text-left text-left" onclick="closeModal()"></div>
-        <div class="relative bg-white w-full max-w-6xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row h-[85vh] border border-white/20 text-left text-left text-left">
-            <div class="bg-slate-950 w-full lg:w-80 p-10 text-white flex flex-col flex-shrink-0 relative text-left text-left text-left text-left text-left">
-                <div class="text-center relative z-10 text-left text-left text-left text-left text-left text-left">
-                    <div class="w-32 h-32 bg-white/10 rounded-[2.5rem] mx-auto flex items-center justify-center mb-6 text-left text-left text-left text-left">
-                        <svg class="w-16 h-16 text-blue-400 opacity-50 text-left" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-width="1.5"/></svg>
-                    </div>
-                    <h2 id="modalName" class="text-2xl font-black uppercase mb-2 leading-none text-left text-center text-left text-left text-left">--</h2>
-                    <div id="modalTag" class="inline-block px-4 py-1.5 bg-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest text-left text-left text-left">--</div>
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                  <User className="w-6 h-6" />
                 </div>
-                <div class="mt-auto no-print text-left flex justify-center text-left text-left text-left text-left">
-                    <button onclick="closeModal()" class="w-full py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-left flex justify-center text-left text-left">Cerrar Expediente</button>
+                <div className="text-right">
+                  <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${user.Año === "3er Año" ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-blue-50 text-blue-700 border border-blue-100'}`}>
+                    {user.Año}
+                  </span>
                 </div>
+              </div>
+              
+              <div className="mb-6 flex-1">
+                <h3 className="text-base font-black text-slate-800 leading-tight group-hover:text-blue-600 transition-colors uppercase">
+                  {user.Apellido}
+                </h3>
+                <h4 className="text-sm font-semibold text-slate-500 mb-3">{user.Nombre}</h4>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400 font-medium">DNI</span>
+                    <span className="text-slate-700 font-bold tracking-wider">{user.DNI}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400 font-medium">Edad Actual</span>
+                    <span className="text-blue-600 font-bold">{user.EdadActual} años</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-50 flex items-center gap-3 text-slate-400">
+                <MapPin className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-bold uppercase truncate">{user.Localidad}</span>
+                <ChevronRight className="w-4 h-4 ml-auto text-slate-300 group-hover:text-blue-600 transition-colors" />
+              </div>
             </div>
-            <div class="flex-1 overflow-y-auto bg-[#f8fafc] p-10 lg:p-16 text-left text-left text-left text-left text-left text-left text-left" id="modalFields"></div>
+          ))}
         </div>
+      </main>
+
+      {/* Modal - Vista de 360 grados de todos los datos */}
+      {selectedUser && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-8">
+          <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-xl" onClick={() => setSelectedUser(null)} />
+          
+          <div className="relative bg-white w-full max-w-6xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row h-[90vh] animate-in zoom-in duration-300">
+            {/* Perfil Izquierdo */}
+            <div className="bg-[#0f172a] w-full lg:w-80 p-8 text-white flex flex-col flex-shrink-0">
+              <div className="w-32 h-32 bg-white/10 rounded-3xl mx-auto flex items-center justify-center mb-6 border border-white/10 relative">
+                <User className="w-16 h-16 text-blue-400" />
+                <div className="absolute -bottom-2 -right-2 bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-900/50">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+              </div>
+
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-black uppercase leading-none mb-1">{selectedUser.Apellido}</h2>
+                <h3 className="text-lg font-light text-slate-400 leading-tight">{selectedUser.Nombre}</h3>
+                <p className="mt-4 inline-block px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-blue-400 tracking-widest uppercase">
+                  {selectedUser.Año}
+                </p>
+              </div>
+
+              <div className="space-y-4 pt-6 border-t border-white/5">
+                <div className="flex items-center gap-3 text-sm">
+                  <Phone className="w-4 h-4 text-slate-500" />
+                  <span className="font-medium">{selectedUser.Celular}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <MapPin className="w-4 h-4 text-slate-500" />
+                  <span className="font-medium truncate">{selectedUser.Localidad}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <Calendar className="w-4 h-4 text-slate-500" />
+                  <span className="font-medium">Nac: {selectedUser.FechaNac}</span>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setSelectedUser(null)}
+                className="mt-auto w-full py-4 bg-white/5 hover:bg-white text-white hover:text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all duration-300"
+              >
+                Cerrar Expediente
+              </button>
+            </div>
+
+            {/* Contenedor de Datos Dinámicos */}
+            <div className="flex-1 overflow-y-auto bg-slate-50/50 p-6 lg:p-12">
+              <div className="max-w-4xl mx-auto space-y-12">
+                
+                {Object.entries(getFieldGroups(selectedUser)).map(([category, fields]) => (
+                  fields.length > 0 && (
+                    <section key={category}>
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="h-px bg-slate-200 flex-1" />
+                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                          {category === 'Identidad' && <Info className="w-3.5 h-3.5" />}
+                          {category === 'Salud' && <HeartPulse className="w-3.5 h-3.5" />}
+                          {category === 'Domicilio' && <Home className="w-3.5 h-3.5" />}
+                          {category === 'Familiar' && <Users className="w-3.5 h-3.5" />}
+                          {category === 'Academico' && <GraduationCap className="w-3.5 h-3.5" />}
+                          {category === 'Otros' && <Activity className="w-3.5 h-3.5" />}
+                          {category}
+                        </h4>
+                        <div className="h-px bg-slate-200 flex-1" />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {fields.map(([key, value]) => (
+                          <div key={key} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 hover:border-blue-200 transition-colors">
+                            <p className="text-[9px] font-bold text-slate-400 uppercase mb-1 leading-none truncate" title={key}>{key}</p>
+                            <p className="text-slate-900 font-bold text-sm tracking-tight">{String(value) || "-"}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )
+                ))}
+
+                <div className="p-8 bg-blue-600 rounded-[2rem] text-white shadow-xl shadow-blue-900/20 flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="text-center md:text-left">
+                    <h5 className="text-xs font-black uppercase tracking-widest opacity-60 mb-1">Cálculo de Edad Automático</h5>
+                    <p className="text-2xl font-black">Este cadete tiene {selectedUser.EdadActual} años cumplidos</p>
+                    <p className="text-[10px] font-medium opacity-80 mt-1">Sincronizado con la fecha oficial del sistema: Abril 2026</p>
+                  </div>
+                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                    <Calendar className="w-8 h-8" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+};
 
-    <!-- MOTOR DE SINCRONIZACIÓN SENIOR -->
-    <script type="module">
-        const DRIVE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSNtpB6_esSJ6zIOFZebrESmLM9xZF7xhTNaUJ0WgQ6qYCF9RkUqjAohSNWA8qaig/pub?output=csv";
-        
-        let cadetes = [];
-        let searchTerm = "";
-        let selectedCourse = "TODOS";
-        let currentView = "grid";
-
-        // --- SISTEMA ESPÍA ---
-        const log = (msg, type = "info") => {
-            const el = document.getElementById('spyLog');
-            if(!el) return;
-            const entry = document.createElement('div');
-            entry.className = `mb-1 ${type === 'error' ? 'log-error' : type === 'success' ? 'log-success' : type === 'warn' ? 'log-warn' : 'log-info'}`;
-            entry.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            el.appendChild(entry);
-            el.scrollTop = el.scrollHeight;
-        };
-
-        const hideLoader = () => {
-            const sl = document.getElementById('safetyLoader');
-            if(sl) { sl.style.opacity = "0"; setTimeout(() => sl.style.display = "none", 400); }
-        };
-        window.forceHideLoader = hideLoader;
-
-        // --- EXTRACCIÓN UNIVERSAL DE DATOS ---
-        const findKey = (obj, patterns) => {
-            if (!obj) return null;
-            const keys = Object.keys(obj);
-            // Primero buscar coincidencia exacta
-            for (const p of patterns) {
-                const found = keys.find(k => k.trim().toUpperCase() === p.toUpperCase());
-                if (found) return found;
-            }
-            // Luego buscar coincidencia parcial
-            for (const p of patterns) {
-                const found = keys.find(k => k.trim().toUpperCase().includes(p.toUpperCase()));
-                if (found) return found;
-            }
-            return null;
-        };
-
-        const processRawData = (raw) => {
-            log(`Analizando ${raw.length} legajos maestros...`, "info");
-            return raw.map(u => {
-                const dniK = findKey(u, ["DNI", "DOCUMENTO", "LEGAJO", "ID", "CUIL"]);
-                const apeK = findKey(u, ["APELLIDO"]);
-                const nomK = findKey(u, ["NOMBRE"]);
-                const curK = findKey(u, ["CURSO", "AÑO", "NIVEL"]);
-
-                const dni = dniK ? u[dniK].toString().replace(/[^0-9]/g, '') : "S/D";
-                const ap = (apeK ? u[apeK] : "S/D").toString().toUpperCase();
-                const nom = (nomK ? u[nomK] : "").toString().toUpperCase(); // CORREGIDO: de nomKey a nomK
-                const curVal = (curK ? u[curK] : "S/D").toString().toUpperCase();
-
-                let curso = "S/D";
-                if (curVal.includes("3") || curVal.includes("TERC")) curso = "3er Año";
-                else if (curVal.includes("2") || curVal.includes("SEG")) curso = "2do Año";
-                else if (curVal.includes("1") || curVal.includes("PRIM")) curso = "1er Año";
-
-                return { ...u, _dni: dni, _display: `${ap}${nom ? ', ' + nom : ''}`, _curso: curso };
-            }).filter(u => u._dni !== "S/D").sort((a,b) => a._display.localeCompare(b._display));
-        };
-
-        // --- SINCRONIZACIÓN PROFESIONAL ---
-        window.syncMasterData = async () => {
-            log("Iniciando conexión institucional...");
-            
-            try {
-                const response = await fetch(DRIVE_URL);
-                if(response.ok) return handleSuccess(await response.text());
-            } catch(e) {}
-
-            log("Activando Túnel de Rescate Alfa...", "warn");
-            try {
-                const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(DRIVE_URL)}`);
-                if(res.ok) return handleSuccess(await res.text());
-            } catch(e) {}
-
-            log("Activando Túnel de Rescate Beta...", "warn");
-            try {
-                const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(DRIVE_URL)}`);
-                if(res.ok) return handleSuccess(await res.text());
-            } catch(e) {}
-
-            log("Enlace automático bloqueado por el navegador.", "error");
-            log("Sugerencia: Use 'Cargar Excel Local' para subir el archivo manual.", "success");
-            setTimeout(hideLoader, 3000);
-        };
-
-        const handleSuccess = (csv) => {
-            if(csv.trim().startsWith("<!DOCTYPE html")) {
-                log("ERROR: Enlace incorrecto en Drive (es una web).", "error");
-                return;
-            }
-            try {
-                const wb = XLSX.read(csv, { type: 'string' });
-                const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                cadetes = processRawData(raw);
-                log(`ÉXITO: ${cadetes.length} registros sincronizados.`, "success");
-                renderMain();
-                renderFilters();
-                hideLoader();
-            } catch (err) {
-                log("Error al procesar los datos de la nube.", "error");
-            }
-        };
-
-        // --- RENDERIZADO ---
-        const renderMain = () => {
-            const data = cadetes.filter(u => {
-                const s = JSON.stringify(u).toLowerCase();
-                return s.includes(searchTerm.toLowerCase()) && (selectedCourse === "TODOS" || u._curso === selectedCourse);
-            });
-
-            document.getElementById('visibleCounter').innerText = data.length;
-            const target = document.getElementById('mainContent');
-            if(!target) return;
-            target.innerHTML = "";
-
-            if (data.length === 0) {
-                target.innerHTML = `<div class="py-20 text-center text-slate-400 font-black uppercase bg-white rounded-[3rem] border-2 border-dashed border-slate-200">Sin legajos operativos detectados.</div>`;
-                return;
-            }
-
-            if (currentView === "grid") {
-                const grid = document.createElement('div');
-                grid.className = "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 animate-pro";
-                data.forEach(u => {
-                    const card = document.createElement('div');
-                    card.onclick = () => openModal(u._dni);
-                    card.className = "bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200 hover:shadow-2xl transition-all cursor-pointer group flex flex-col h-full";
-                    card.innerHTML = `
-                        <div class="flex justify-between items-start mb-6"><div class="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-width="2"/></svg></div><span class="px-2.5 py-1 bg-slate-100 rounded-lg text-[9px] font-black uppercase text-slate-500">${u._curso}</span></div>
-                        <h3 class="text-xl font-black text-slate-900 leading-tight uppercase mb-1">${u._display}</h3>
-                        <div class="mt-auto bg-slate-50 p-4 rounded-3xl border border-slate-100 font-mono text-[10px]"><p class="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">DNI IDENTIDAD</p><p class="font-bold text-slate-900">${u._dni}</p></div>`;
-                    grid.appendChild(card);
-                });
-                target.appendChild(grid);
-            } else {
-                target.innerHTML = `
-                <div class="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-200 animate-pro">
-                    <table class="w-full excel-table">
-                        <thead><tr><th>Apellido y Nombre</th><th>Identidad</th><th>Año</th></tr></thead>
-                        <tbody>${data.map(u => `
-                            <tr onclick='openModal("${u._dni}")' class="hover:bg-blue-50 cursor-pointer font-bold uppercase">
-                                <td class="px-6 py-4">${u._display}</td>
-                                <td class="text-blue-600 font-mono">${u._dni}</td>
-                                <td><span class="px-2 py-0.5 rounded bg-slate-900 text-white text-[9px]">${u._curso}</span></td>
-                            </tr>`).join('')}
-                        </tbody>
-                    </table>
-                </div>`;
-            }
-        };
-
-        const renderFilters = () => {
-            const container = document.getElementById('courseFilters');
-            if(!container) return;
-            container.innerHTML = "";
-            ["TODOS", "1er Año", "2do Año", "3er Año"].forEach(n => {
-                const b = document.createElement('button');
-                b.onclick = () => { selectedCourse = n; renderFilters(); renderMain(); };
-                b.className = `w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all ${selectedCourse === n ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'} text-left`;
-                b.innerHTML = `<span class="text-[10px] font-black uppercase tracking-widest text-left">${n}</span>${selectedCourse === n ? '<div class="w-1.5 h-1.5 bg-white rounded-full text-left"></div>' : ''}`;
-                container.appendChild(b);
-            });
-        };
-
-        const openModal = (dni) => {
-            const u = cadetes.find(x => x._dni === dni);
-            if (!u) return;
-            document.getElementById('modalName').innerText = u._display;
-            document.getElementById('modalTag').innerText = u._curso;
-            const container = document.getElementById('modalFields');
-            
-            container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
-                ${Object.entries(u).filter(([k]) => !k.startsWith('_')).map(([k, v]) => `
-                    <div class="bg-white border border-slate-200 p-5 rounded-3xl text-left hover:border-blue-500/20 transition-all">
-                        <label class="block text-[8px] font-black text-slate-400 uppercase mb-2 text-left">${k}</label>
-                        <p class="font-bold text-slate-900 text-sm text-left break-words">${v || "-"}</p>
-                    </div>`).join('')}
-            </div>`;
-            
-            document.getElementById('modalContainer').classList.replace("hidden", "flex");
-        };
-
-        // --- EVENTOS ---
-        document.getElementById('searchInput').oninput = (e) => { searchTerm = e.target.value; renderMain(); };
-        window.closeModal = () => document.getElementById('modalContainer').classList.replace("flex", "hidden");
-        window.setView = (v) => { currentView = v; renderMain(); };
-        
-        document.getElementById('fileUploader').onchange = (e) => {
-            const f = e.target.files[0];
-            if (!f) return;
-            log(`Leyendo archivo: ${f.name}...`, "info");
-            const r = new FileReader();
-            r.onload = (evt) => {
-                try {
-                    const data = new Uint8Array(evt.target.result);
-                    const wb = XLSX.read(data, { type: 'array' });
-                    const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                    cadetes = processRawData(raw);
-                    renderMain(); renderFilters();
-                    hideLoader();
-                    log(`✅ CARGA MANUAL ÉXITOSA: ${cadetes.length} registros.`, "success");
-                } catch (err) {
-                    log("Error al procesar el archivo Excel.", "error");
-                }
-            };
-            r.readAsArrayBuffer(f);
-        };
-
-        window.syncMasterData();
-    </script>
-</body>
-</html>
+export default App;
