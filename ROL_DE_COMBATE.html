@@ -1,441 +1,345 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="gl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rol de Combate PRO - Gestión Institucional</title>
-    
-    <!-- Tailwind CSS para el diseño -->
+    <title>Rol de Combate PRO - Xestión Institucional v21.0</title>
+    <!-- Librarías vía CDN: Tailwind para o deseño e SheetJS para o Excel -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS para procesar Excel y CSV -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Google Fonts: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f172a; /* Slate 900 */
-            color: #f1f5f9;
-        }
-
-        /* Estilos de Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-        /* Animaciones suaves */
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Optimizaciones para impresión */
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; text-align: left; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
         @media print {
             .no-print { display: none !important; }
-            body { background: white !important; color: black !important; }
-            .print-only { display: block !important; }
-            .card-container { display: block !important; }
-            .cadet-card { 
-                break-inside: avoid; 
-                border: 1px solid #ddd !important; 
-                margin-bottom: 1rem;
-                background: white !important;
-                color: black !important;
-            }
-            #modalContent { display: block !important; position: static !important; }
+            body { background: white !important; }
+            .print-page { padding: 1cm; color: black !important; }
         }
 
-        .glass {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
+        #loadingOverlay { position: fixed; inset: 0; background: #0f172a; z-index: 1000; display: flex; align-items: center; justify-content: center; flex-direction: column; color: white; transition: opacity 0.4s ease; }
+        .input-edit { @apply w-full bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col md:flex-row">
+<body class="overflow-x-hidden">
 
-    <!-- SIDEBAR -->
-    <aside class="no-print w-full md:w-72 glass md:h-screen sticky top-0 z-40 p-6 flex flex-col gap-8 shadow-2xl border-r border-slate-800">
-        <div class="flex flex-col items-center text-center gap-2">
-            <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-            </div>
-            <div>
-                <h1 class="text-xl font-bold tracking-tight text-white">Rol de Combate <span class="text-indigo-400">PRO</span></h1>
-                <p class="text-xs text-slate-400 uppercase tracking-widest font-semibold mt-1">Gestión Institucional</p>
-            </div>
-        </div>
+    <!-- Pantalla de Carga -->
+    <div id="loadingOverlay">
+        <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <p class="mt-8 text-[12px] font-black uppercase tracking-[0.5em] text-blue-400 animate-pulse">Sincronizando Base de Datos...</p>
+    </div>
 
-        <nav class="flex flex-col gap-2">
-            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 ml-2">Filtros por Curso</p>
-            <button onclick="setFilter('TODOS')" id="btn-TODOS" class="filter-btn w-full text-left px-4 py-3 rounded-2xl bg-indigo-600 text-white font-medium transition-all shadow-lg shadow-indigo-600/20">
-                Todos los Registros
-            </button>
-            <button onclick="setFilter('1er Año')" id="btn-1er-Año" class="filter-btn w-full text-left px-4 py-3 rounded-2xl text-slate-400 hover:bg-slate-800 transition-all">
-                1er Año
-            </button>
-            <button onclick="setFilter('2do Año')" id="btn-2do-Año" class="filter-btn w-full text-left px-4 py-3 rounded-2xl text-slate-400 hover:bg-slate-800 transition-all">
-                2do Año
-            </button>
-            <button onclick="setFilter('3er Año')" id="btn-3er-Año" class="filter-btn w-full text-left px-4 py-3 rounded-2xl text-slate-400 hover:bg-slate-800 transition-all">
-                3er Año
-            </button>
-        </nav>
-
-        <div class="mt-auto p-4 bg-slate-900/50 rounded-3xl border border-slate-800">
-            <div class="flex justify-between items-center mb-1">
-                <span class="text-xs text-slate-400">Total:</span>
-                <span id="stat-total" class="text-sm font-bold text-white">0</span>
-            </div>
-            <div class="flex justify-between items-center">
-                <span class="text-xs text-slate-400">Filtrados:</span>
-                <span id="stat-visible" class="text-sm font-bold text-indigo-400">0</span>
-            </div>
-        </div>
-    </aside>
-
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="flex-1 p-4 md:p-8 overflow-x-hidden">
+    <div id="app" class="min-h-screen flex flex-col lg:flex-row no-print text-left">
         
-        <!-- HEADER / ACTIONS -->
-        <header class="no-print flex flex-col lg:flex-row gap-4 mb-8 items-center">
-            <div class="relative w-full lg:flex-1">
-                <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </span>
-                <input type="text" id="globalSearch" oninput="handleSearch()" placeholder="Buscar por DNI, Apellido, Nombre o cualquier campo..." 
-                       class="w-full bg-slate-800 border-none ring-1 ring-slate-700 focus:ring-2 focus:ring-indigo-500 rounded-3xl py-4 pl-12 pr-6 text-white placeholder-slate-500 transition-all outline-none">
+        <!-- Sidebar -->
+        <aside class="w-full lg:w-80 bg-[#0f172a] text-white flex flex-col lg:sticky lg:top-0 h-screen shadow-2xl z-50">
+            <div class="p-8 border-b border-white/5 flex items-center gap-4">
+                <div class="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-500/40">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04a11.357 11.357 0 00-1.573 7.853c.523 5.51 5.963 10.414 10.191 12.117a10.598 10.598 0 003.978 0c4.227-1.703 9.668-6.607 10.191-12.117a11.356 11.356 0 00-1.573-7.853z" stroke-width="2"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-sm font-black tracking-tighter leading-none uppercase italic">Rol de Combate</h1>
+                    <p class="text-[9px] font-medium opacity-30 uppercase tracking-widest mt-1">Xestión Unificada v21.0</p>
+                </div>
             </div>
 
-            <div class="flex gap-2 w-full lg:w-auto">
-                <button onclick="syncFromGoogle()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-3xl text-sm font-semibold transition-all">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-width="2"/></svg>
-                    Sincronizar
-                </button>
-                <label class="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-indigo-600 hover:bg-indigo-500 rounded-3xl text-sm font-semibold cursor-pointer transition-all shadow-lg shadow-indigo-600/20">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-width="2"/></svg>
-                    Cargar Manual
-                    <input type="file" id="fileInput" class="hidden" accept=".csv, .xlsx, .xls" onchange="handleManualUpload(event)">
-                </label>
+            <div class="flex-1 overflow-y-auto p-6 space-y-8">
+                <div>
+                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-4 px-2">Cursos</span>
+                    <nav id="courseFilters" class="space-y-1.5"></nav>
+                </div>
+
+                <div class="pt-6 border-t border-white/5">
+                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-4 px-2">Accións</span>
+                    <button onclick="syncData()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all mb-4 shadow-lg flex items-center justify-center gap-2">
+                        Actualizar Drive
+                    </button>
+                    
+                    <label class="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-blue-600/20 transition-all cursor-pointer group">
+                        <div class="text-left">
+                            <p class="text-xs font-bold leading-tight uppercase text-blue-400 text-left">Subir Excel Manual</p>
+                            <p class="text-[8px] opacity-40 text-left">Arquivo .csv</p>
+                        </div>
+                        <input type="file" accept=".csv" class="hidden" id="csvFileInput">
+                    </label>
+                </div>
             </div>
-        </header>
+            <div class="p-6 border-t border-white/5 text-center text-[10px] font-black uppercase text-slate-600 italic">Conexión Segura</div>
+        </aside>
 
-        <!-- GRID DE TARJETAS -->
-        <div id="cadetsGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            <!-- Loader inicial -->
-            <div class="col-span-full py-20 flex flex-col items-center justify-center text-slate-500 gap-4">
-                <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
-                <p class="font-medium">Cargando base de datos institucional...</p>
-            </div>
-        </div>
-
-        <!-- Empty State -->
-        <div id="emptyState" class="hidden col-span-full py-20 flex flex-col items-center justify-center text-slate-500 text-center gap-4">
-            <svg class="h-16 w-16 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"/></svg>
-            <p class="text-xl font-medium">No se encontraron resultados</p>
-            <p class="text-sm">Intenta con otros términos o cambia el filtro de curso.</p>
-        </div>
-    </main>
-
-    <!-- MODAL EXPEDIENTE -->
-    <div id="modalOverlay" class="no-print fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 w-full max-w-5xl max-h-[90vh] rounded-[2.5rem] border border-slate-800 shadow-2xl overflow-hidden flex flex-col fade-in">
-            
-            <!-- Modal Header -->
-            <div class="p-6 md:p-8 flex justify-between items-center border-b border-slate-800">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center">
-                        <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-width="2"/></svg>
-                    </div>
-                    <div>
-                        <h2 id="modalTitle" class="text-2xl font-bold text-white leading-tight">Expediente Individual</h2>
-                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">Visor de Datos Protegidos</p>
+        <!-- Main View -->
+        <main class="flex-1 flex flex-col min-w-0 bg-slate-50">
+            <header class="bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-40 p-6 flex flex-col xl:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-4 w-full xl:w-auto flex-1 max-w-5xl">
+                    <div class="relative flex-1">
+                        <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Busca por nome, DNI ou calquera campo do Excel..." class="w-full pl-6 pr-6 py-4 bg-slate-100 border-2 border-transparent rounded-2xl focus:bg-white focus:border-blue-500/20 transition-all outline-none font-semibold text-sm">
                     </div>
                 </div>
-                <button onclick="closeModal()" class="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400 hover:text-white">
-                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2"/></svg>
-                </button>
+                
+                <div class="flex items-center gap-4 no-print">
+                    <div class="bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center">
+                        <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 text-center">Cadetes</span>
+                        <span class="text-xl font-black text-slate-900 leading-none" id="counterDisplay">0</span>
+                    </div>
+                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl flex items-center gap-3 shadow-lg">
+                        <span class="text-xs font-black uppercase tracking-widest">Imprimir</span>
+                    </button>
+                </div>
+            </header>
+
+            <div id="gridContainer" class="p-8 flex-1 overflow-auto animate-fade-in grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                <!-- Tarxetas dinámicas -->
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL EXPEDIENTE (MOSTRA TODOS OS CAMPOS) -->
+    <div id="modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 lg:p-10 no-print">
+        <div class="absolute inset-0 bg-slate-950/95 backdrop-blur-xl" onclick="closeProfile()"></div>
+        <div class="relative bg-white w-full max-w-7xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row h-[90vh] border border-white/20 text-left">
+            
+            <!-- Perfil Lateral do Modal -->
+            <div class="bg-slate-950 w-full lg:w-96 p-10 text-white flex flex-col flex-shrink-0 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-blue-600/10 blur-3xl rounded-full -mr-20 -mt-20"></div>
+                <div class="text-center relative z-10">
+                    <div class="w-36 h-36 bg-white/5 rounded-[3rem] mx-auto flex items-center justify-center mb-8 border border-white/10 shadow-2xl">
+                        <svg class="w-20 h-20 text-blue-400 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-width="1.5"/></svg>
+                    </div>
+                    <h2 id="modalName" class="text-2xl font-black uppercase leading-tight mb-2 text-center">--</h2>
+                    <div id="modalBadge" class="inline-block px-5 py-2 bg-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl text-center">--</div>
+                </div>
+
+                <div class="mt-12 space-y-4 flex-1 overflow-y-auto pr-2 hide-scrollbar text-left" id="modalSidebar">
+                    <!-- Resumo lateral -->
+                </div>
+
+                <div class="mt-10 space-y-3">
+                    <button id="btnEdit" onclick="toggleEditMode()" class="w-full py-5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-3xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-xl">
+                        <span id="txtBtnEdit">Modificar Datos</span>
+                    </button>
+                    <button onclick="closeProfile()" class="w-full py-5 bg-white/5 hover:bg-white/10 text-white rounded-3xl text-[10px] font-black uppercase tracking-widest transition-all">Pechar</button>
+                </div>
             </div>
 
-            <!-- Modal Content (Scrollable) -->
-            <div id="modalContent" class="p-8 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-slate-900/50">
-                <!-- Se llena dinámicamente -->
-            </div>
-
-            <!-- Modal Footer -->
-            <div class="p-6 md:p-8 flex justify-between items-center border-t border-slate-800 bg-slate-900">
-                <button onclick="printCurrentExpediente()" class="px-6 py-3 rounded-2xl border border-slate-700 hover:bg-slate-800 text-sm font-semibold transition-all flex items-center gap-2">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" stroke-width="2"/></svg>
-                    Imprimir Ficha
-                </button>
-                <div class="flex gap-3">
-                    <button id="btnEdit" onclick="enableEdit()" class="px-8 py-3 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm font-bold transition-all border border-slate-700">
-                        Modificar Ficha
-                    </button>
-                    <button id="btnSave" onclick="saveChanges()" class="hidden px-8 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-sm font-bold transition-all shadow-lg shadow-indigo-600/30">
-                        Guardar Cambios
-                    </button>
+            <!-- Corpo do Expediente (DINÁMICO) -->
+            <div class="flex-1 overflow-y-auto bg-[#f8fafc] p-10 lg:p-20 text-left">
+                <div class="max-w-5xl mx-auto">
+                    <div class="flex items-center gap-4 mb-12">
+                        <h4 class="text-[12px] font-black text-blue-600 uppercase tracking-[0.3em]">Expediente Completo (Tódolos Campos)</h4>
+                        <div class="h-px bg-blue-600/10 flex-1"></div>
+                    </div>
+                    <div id="fieldsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 text-left">
+                        <!-- Aquí cárganse todas as columnas do Excel -->
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Script de Lóxica -->
     <script>
-        // --- VARIABLES DE ESTADO ---
-        let originalData = []; // Datos crudos cargados
-        let displayedData = []; // Datos después de filtrar/ordenar
-        let activeFilter = 'TODOS';
-        let searchQuery = '';
-        let currentEditingIndex = null;
-        const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSNtpB6_esSJ6zIOFZebrESmLM9xZF7xhTNaUJ0WgQ6qYCF9RkUqjAohSNWA8qaig/pub?output=csv";
+        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSNtpB6_esSJ6zIOFZebrESmLM9xZF7xhTNaUJ0WgQ6qYCF9RkUqjAohSNWA8qaig/pub?output=csv";
+        
+        let db = []; 
+        let filtered = []; 
+        let query = "";
+        let currentLevel = "TODOS";
+        let activeIdx = null;
+        let isEditing = false;
 
-        // --- INICIALIZACIÓN ---
         window.onload = () => {
-            syncFromGoogle();
+            syncData();
+            drawFilters();
         };
 
-        // --- CARGA DE DATOS ---
-        async function syncFromGoogle() {
-            showLoader();
+        async function syncData() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
             try {
-                const response = await fetch(GOOGLE_SHEET_URL);
-                if (!response.ok) throw new Error("Error al conectar con Google Sheets");
-                const csvText = await response.text();
-                processRawData(csvText, 'csv');
-            } catch (error) {
-                console.error(error);
-                alert("No se pudo cargar automáticamente. Por favor, use la Carga Manual.");
-                renderEmpty();
-            }
-        }
-
-        function handleManualUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            showLoader();
-            const reader = new FileReader();
-            const ext = file.name.split('.').pop().toLowerCase();
-
-            reader.onload = (e) => {
-                const data = e.target.result;
-                if (ext === 'csv') {
-                    processRawData(data, 'csv');
-                } else {
-                    processRawData(data, 'excel');
-                }
-            };
-
-            if (ext === 'csv') {
-                reader.readAsText(file);
-            } else {
-                reader.readAsArrayBuffer(file);
-            }
-        }
-
-        function processRawData(rawDataStr, type) {
-            let json = [];
-            if (type === 'csv') {
-                const workbook = XLSX.read(rawDataStr, { type: 'string' });
-                const sheetName = workbook.SheetNames[0];
-                json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-            } else {
-                const workbook = XLSX.read(rawDataStr, { type: 'buffer' });
-                const sheetName = workbook.SheetNames[0];
-                json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-            }
-
-            // Mapeo Dinámico & Orden Alfabético por "Apellido"
-            originalData = json.sort((a, b) => {
-                const ap1 = String(a.Apellido || '').toLowerCase();
-                const ap2 = String(b.Apellido || '').toLowerCase();
-                return ap1.localeCompare(ap2);
-            });
-
-            applyFiltersAndRender();
-        }
-
-        // --- FILTROS Y BÚSQUEDA ---
-        function setFilter(filter) {
-            activeFilter = filter;
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg', 'shadow-indigo-600/20');
-                btn.classList.add('text-slate-400', 'hover:bg-slate-800');
-            });
-            const activeBtn = document.getElementById(`btn-${filter.replace(' ', '-')}`);
-            activeBtn.classList.remove('text-slate-400', 'hover:bg-slate-800');
-            activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-lg', 'shadow-indigo-600/20');
-            
-            applyFiltersAndRender();
-        }
-
-        function handleSearch() {
-            searchQuery = document.getElementById('globalSearch').value.toLowerCase();
-            applyFiltersAndRender();
-        }
-
-        function applyFiltersAndRender() {
-            displayedData = originalData.filter(item => {
-                // Filtro de Curso
-                const matchCourse = activeFilter === 'TODOS' || 
-                                   (item.Curso && item.Curso.toString() === activeFilter);
+                const res = await fetch(CSV_URL);
+                const csv = await res.text();
+                const wb = XLSX.read(csv, { type: 'string' });
+                const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
                 
-                // Búsqueda Global (en todos los campos)
-                const matchSearch = Object.values(item).some(val => 
-                    String(val).toLowerCase().includes(searchQuery)
-                );
+                // ORDE ALFABÉTICA POR APELIDO
+                db = raw.sort((a, b) => {
+                    const apeA = (a.Apellido || a.APELLIDO || "").toString().toUpperCase();
+                    const apeB = (b.Apellido || b.APELLIDO || "").toString().toUpperCase();
+                    return apeA.localeCompare(apeB);
+                });
+                
+                updateView();
+            } catch (err) {
+                console.error(err);
+                alert("Erro de conexión. Tenta subir o arquivo manualmente.");
+            }
+            setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 600);
+        }
 
-                return matchCourse && matchSearch;
+        function updateView() {
+            filtered = db.filter(item => {
+                const searchStr = JSON.stringify(item).toLowerCase();
+                const matchesSearch = searchStr.includes(query.toLowerCase());
+                
+                const anoVal = (item.Año || item.AÑO || "").toString().toUpperCase();
+                const matchesLevel = currentLevel === "TODOS" || anoVal.includes(currentLevel.split(' ')[0].toUpperCase());
+                
+                return matchesSearch && matchesLevel;
             });
 
             renderGrid();
-            updateStats();
+            document.getElementById('counterDisplay').innerText = filtered.length;
         }
 
-        // --- RENDERIZADO ---
         function renderGrid() {
-            const grid = document.getElementById('cadetsGrid');
-            const empty = document.getElementById('emptyState');
-            grid.innerHTML = '';
-
-            if (displayedData.length === 0) {
-                empty.classList.remove('hidden');
-                return;
-            }
-            empty.classList.add('hidden');
-
-            displayedData.forEach((item, index) => {
+            const container = document.getElementById('gridContainer');
+            container.innerHTML = "";
+            
+            filtered.forEach((c, i) => {
                 const card = document.createElement('div');
-                card.className = 'cadet-card glass rounded-[2rem] p-6 hover:ring-2 hover:ring-indigo-500 transition-all cursor-pointer fade-in shadow-xl hover:shadow-indigo-500/10 group';
-                card.onclick = () => openModal(index);
-
-                // Cabecera de la tarjeta con Apellido y Nombre
-                const nombreCompleto = `${item.Apellido || ''}, ${item.Nombre || 'Sin Nombre'}`.toUpperCase();
+                card.onclick = () => openProfile(i);
+                card.className = "bg-white p-7 rounded-[2.5rem] shadow-sm border border-slate-200 hover:shadow-2xl transition-all cursor-pointer group flex flex-col h-full text-left";
                 
-                // Generamos 3 campos destacados dinámicamente si existen
-                const keys = Object.keys(item).filter(k => !['Apellido', 'Nombre', 'id'].includes(k)).slice(0, 3);
-                let detailHtml = keys.map(k => `
-                    <div class="flex justify-between text-xs py-1 border-b border-slate-800/50">
-                        <span class="text-slate-500 font-medium">${k}:</span>
-                        <span class="text-slate-300 font-semibold truncate ml-2">${item[k]}</span>
-                    </div>
-                `).join('');
+                const ape = (c.Apellido || c.APELLIDO || "S/D").toUpperCase();
+                const nom = (c.Nombre || c.NOMBRE || "").toUpperCase();
+                const dni = c.DNI || c.DOCUMENTO || "S/D";
+                const ano = c.Año || c.AÑO || "S/D";
 
                 card.innerHTML = `
-                    <div class="flex items-center gap-4 mb-4">
-                        <div class="w-12 h-12 rounded-2xl bg-slate-800 group-hover:bg-indigo-600/20 flex items-center justify-center transition-colors">
-                            <span class="text-lg font-bold text-indigo-400">${item.Apellido ? item.Apellido[0] : '?'}</span>
+                    <div class="flex justify-between items-start mb-6 text-left">
+                        <div class="w-14 h-14 bg-slate-900 rounded-3xl flex items-center justify-center text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all text-left">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-width="2"/></svg>
                         </div>
-                        <div class="overflow-hidden">
-                            <h3 class="text-sm font-bold text-white truncate">${nombreCompleto}</h3>
-                            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${item.Curso || 'SIN CURSO'}</p>
-                        </div>
+                        <span class="px-3 py-1 bg-slate-100 rounded-xl text-[10px] font-black uppercase text-slate-500">${ano}</span>
                     </div>
-                    <div class="space-y-1">
-                        ${detailHtml}
-                    </div>
-                    <div class="mt-4 pt-4 border-t border-slate-800 flex justify-end">
-                        <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter group-hover:tracking-widest transition-all">Ver Expediente →</span>
+                    <h3 class="text-xl font-black text-slate-900 leading-tight uppercase mb-1 text-left">${ape}</h3>
+                    <p class="text-slate-500 font-medium text-sm mb-8 text-left">${nom}</p>
+                    <div class="mt-auto bg-slate-50 p-4 rounded-3xl border border-slate-100 font-mono text-[10px] text-left">
+                        <p class="text-[7px] font-black text-slate-400 uppercase leading-none mb-1 text-left">Identificación</p>
+                        <p class="font-bold text-slate-900 text-left">${dni}</p>
                     </div>
                 `;
-                grid.appendChild(card);
+                container.appendChild(card);
             });
         }
 
-        function updateStats() {
-            document.getElementById('stat-total').innerText = originalData.length;
-            document.getElementById('stat-visible').innerText = displayedData.length;
+        function drawFilters() {
+            const nav = document.getElementById('courseFilters');
+            const options = ["TODOS", "1er Año", "2do Año", "3er Año"];
+            nav.innerHTML = "";
+            options.forEach(opt => {
+                const b = document.createElement('button');
+                b.onclick = () => { currentLevel = opt; drawFilters(); updateView(); };
+                b.className = `w-full flex items-center justify-between px-6 py-4 rounded-[1.5rem] transition-all ${currentLevel === opt ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'} text-left`;
+                b.innerHTML = `<span class="text-[10px] font-black uppercase tracking-widest text-left">${opt}</span>`;
+                nav.appendChild(b);
+            });
         }
 
-        function showLoader() {
-            document.getElementById('cadetsGrid').innerHTML = `
-                <div class="col-span-full py-20 flex flex-col items-center justify-center text-slate-500 gap-4">
-                    <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
-                    <p class="font-medium">Procesando información institucional...</p>
+        function handleSearch() {
+            query = document.getElementById('searchInput').value;
+            updateView();
+        }
+
+        // --- EXPEDIENTE ---
+        function openProfile(idx) {
+            activeIdx = idx;
+            isEditing = false;
+            updateProfileUI();
+            document.getElementById('modal').classList.replace('hidden', 'flex');
+        }
+
+        function updateProfileUI() {
+            const c = filtered[activeIdx];
+            const ape = (c.Apellido || c.APELLIDO || "S/D").toUpperCase();
+            const nom = (c.Nombre || c.NOMBRE || "").toUpperCase();
+            const ano = c.Año || c.AÑO || "S/D";
+
+            document.getElementById('modalName').innerText = `${ape} ${nom}`;
+            document.getElementById('modalBadge').innerText = ano;
+            document.getElementById('txtBtnEdit').innerText = isEditing ? "Gardar Cambios" : "Modificar Legajo";
+            
+            const sidebar = document.getElementById('modalSidebar');
+            sidebar.innerHTML = `
+                <div class="bg-white/5 p-5 rounded-[1.5rem] border border-white/5 text-left">
+                    <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1 text-left">DNI</p>
+                    <p class="text-sm font-bold text-slate-200 truncate text-left">${c.DNI || c.DOCUMENTO || "-"}</p>
+                </div>
+                <div class="bg-white/5 p-5 rounded-[1.5rem] border border-white/5 text-left">
+                    <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1 text-left">Localidade</p>
+                    <p class="text-sm font-bold text-slate-200 truncate text-left">${c.Localidad || c.LOCALIDAD || "-"}</p>
                 </div>
             `;
-        }
 
-        function renderEmpty() {
-            document.getElementById('cadetsGrid').innerHTML = '';
-            document.getElementById('emptyState').classList.remove('hidden');
-        }
-
-        // --- MODAL Y EDICIÓN ---
-        function openModal(index) {
-            currentEditingIndex = index;
-            const item = displayedData[index];
-            const content = document.getElementById('modalContent');
-            content.innerHTML = '';
-
-            // Guardamos el índice real en la data original para actualizaciones
-            const originalIndex = originalData.findIndex(d => d === item);
-            currentEditingIndex = originalIndex;
-
-            // Mapeo dinámico de todas las columnas
-            Object.keys(item).forEach(key => {
-                const fieldDiv = document.createElement('div');
-                fieldDiv.className = 'flex flex-col gap-1 p-4 rounded-2xl bg-slate-800/30 border border-slate-800/50';
-                fieldDiv.innerHTML = `
-                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">${key}</label>
-                    <div class="val-display text-sm font-semibold text-slate-200">${item[key] || '-'}</div>
-                    <input type="text" class="val-input hidden bg-slate-700 border-none ring-1 ring-slate-600 focus:ring-2 focus:ring-indigo-500 rounded-xl px-3 py-2 text-sm text-white outline-none" 
-                           data-key="${key}" value="${item[key] || ''}">
-                `;
-                content.appendChild(fieldDiv);
-            });
-
-            document.getElementById('modalOverlay').classList.remove('hidden');
-            document.getElementById('btnEdit').classList.remove('hidden');
-            document.getElementById('btnSave').classList.add('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('modalOverlay').classList.add('hidden');
-        }
-
-        function enableEdit() {
-            document.querySelectorAll('.val-display').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.val-input').forEach(el => el.classList.remove('hidden'));
-            document.getElementById('btnEdit').classList.add('hidden');
-            document.getElementById('btnSave').classList.remove('hidden');
-        }
-
-        function saveChanges() {
-            const inputs = document.querySelectorAll('.val-input');
-            const item = originalData[currentEditingIndex];
-
-            inputs.forEach(input => {
-                const key = input.getAttribute('data-key');
-                item[key] = input.value;
-            });
-
-            // Refrescar vistas
-            applyFiltersAndRender();
+            const grid = document.getElementById('fieldsGrid');
+            grid.innerHTML = "";
             
-            // Volver a estado lectura
-            document.querySelectorAll('.val-display').forEach((el, idx) => {
-                el.innerText = inputs[idx].value || '-';
-                el.classList.remove('hidden');
+            // MAPEO TOTAL DE COLUMNAS DO EXCEL
+            Object.entries(c).forEach(([clave, valor]) => {
+                if(clave.startsWith('_')) return; 
+
+                const box = document.createElement('div');
+                box.className = "bg-white border border-slate-200 p-6 rounded-[2rem] text-left hover:border-blue-500/20 transition-all text-left";
+                
+                if(isEditing) {
+                    box.innerHTML = `
+                        <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">${clave}</label>
+                        <input type="text" value="${valor || ''}" onchange="updateItemValue('${clave}', this.value)" class="input-edit text-left">
+                    `;
+                } else {
+                    box.innerHTML = `
+                        <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">${clave}</label>
+                        <p class="font-bold text-slate-900 text-sm break-words leading-tight text-left">${valor || "-"}</p>
+                    `;
+                }
+                grid.appendChild(box);
             });
-            document.querySelectorAll('.val-input').forEach(el => el.classList.add('hidden'));
-            document.getElementById('btnEdit').classList.remove('hidden');
-            document.getElementById('btnSave').classList.add('hidden');
-            
-            // Feedback visual
-            const btnSave = document.getElementById('btnSave');
-            btnSave.innerText = "¡Guardado!";
-            setTimeout(() => { btnSave.innerText = "Guardar Cambios"; }, 2000);
         }
 
-        function printCurrentExpediente() {
-            window.print();
+        function updateItemValue(key, val) {
+            filtered[activeIdx][key] = val;
         }
+
+        function toggleEditMode() {
+            if (isEditing) {
+                isEditing = false;
+                updateView();
+                showToast("Legajo actualizado na sesión");
+            } else {
+                isEditing = true;
+            }
+            updateProfileUI();
+        }
+
+        function closeProfile() {
+            isEditing = false;
+            document.getElementById('modal').classList.replace('hidden', 'flex');
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.className = "fixed bottom-8 right-8 bg-slate-900 text-white px-6 py-4 rounded-2xl text-xs font-bold border-l-4 border-blue-500 animate-fade-in z-[200] text-left";
+            t.innerText = `✅ ${msg}`;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        // --- SUBIDA MANUAL ---
+        document.getElementById('csvFileInput').onchange = (e) => {
+            const f = e.target.files[0];
+            const r = new FileReader();
+            r.onload = (evt) => {
+                const wb = XLSX.read(evt.target.result, { type: 'binary' });
+                db = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                updateView();
+                showToast("Arquivo cargado correctamente");
+            };
+            r.readAsBinaryString(f);
+        };
     </script>
 </body>
 </html>
