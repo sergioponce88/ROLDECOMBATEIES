@@ -3,224 +3,449 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rol de Combate PRO v22.0</title>
+    <title>Gestión de Rol de Combate</title>
+    <!-- Tailwind CSS para el diseño -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons para los iconos -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; text-align: left; }
-        .card-dark { background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(51, 65, 85, 1); transition: all 0.3s ease; }
-        .card-dark:hover { border-color: #3b82f6; transform: translateY(-2px); background: rgba(30, 41, 59, 0.8); }
-        .input-dark { background: #1e293b; border: 1px solid #334155; color: white; border-radius: 0.75rem; padding: 0.75rem 1rem; width: 100%; outline: none; }
-        .input-dark:focus { border-color: #3b82f6; ring: 2px #3b82f6; }
-        #loader { position: fixed; inset: 0; background: #0f172a; z-index: 1000; display: flex; align-items: center; justify-content: center; flex-direction: column; }
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        @media print { .no-print { display: none !important; } body { background: white; color: black; } }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .modal { display: none; }
+        .modal.active { display: flex; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="overflow-x-hidden text-left">
+<body class="bg-slate-50 text-slate-800 min-h-screen">
 
-    <div id="loader">
-        <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <p class="mt-4 text-blue-400 font-bold uppercase tracking-widest text-xs">Sincronizando Base de Datos...</p>
-    </div>
-
-    <div class="min-h-screen flex flex-col lg:flex-row no-print">
-        <aside class="w-full lg:w-72 bg-[#0f172a] border-r border-slate-800 p-6 flex flex-col lg:sticky lg:top-0 h-screen">
-            <div class="flex items-center gap-3 mb-10">
-                <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04a11.357 11.357 0 00-1.573 7.853c.523 5.51 5.963 10.414 10.191 12.117a10.598 10.598 0 003.978 0c4.227-1.703 9.668-6.607 10.191-12.117a11.356 11.356 0 00-1.573-7.853z" stroke-width="2"/></svg>
+    <!-- APP CONTAINER -->
+    <div id="app" class="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+        
+        <!-- HEADER -->
+        <header class="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex items-center gap-4">
+                <div class="bg-indigo-600 p-3 rounded-xl text-white">
+                    <i data-lucide="users" class="w-8 h-8"></i>
                 </div>
-                <h1 class="text-lg font-extrabold tracking-tighter uppercase italic">Rol de Combate <span class="text-blue-500 text-xs block not-italic font-medium">PRO v22.0</span></h1>
-            </div>
-
-            <nav id="courseFilters" class="space-y-2 flex-1"></nav>
-
-            <div class="pt-6 border-t border-slate-800 space-y-3">
-                <button onclick="fetchData()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all">Sincronizar</button>
-                <label class="block w-full py-3 bg-blue-600 hover:bg-blue-700 text-center rounded-xl text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-all">
-                    Cargar Manual
-                    <input type="file" id="fileInput" accept=".csv, .xlsx" class="hidden">
-                </label>
-            </div>
-            <div class="mt-4 text-[10px] text-slate-500 font-bold uppercase tracking-tighter flex justify-between">
-                <span>Total: <span id="totalCount">0</span></span>
-                <span>Vistos: <span id="filteredCount">0</span></span>
-            </div>
-        </aside>
-
-        <main class="flex-1 p-6 lg:p-10 bg-[#0b1120]">
-            <header class="mb-10 flex flex-col md:flex-row gap-4 items-center">
-                <div class="relative flex-1 w-full">
-                    <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Buscar por nombre, DNI, localidad, sangre..." class="input-dark pl-12 w-full text-sm font-medium">
-                    <svg class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2"/></svg>
-                </div>
-                <button onclick="window.print()" class="px-6 py-3 bg-blue-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition-all">Imprimir</button>
-            </header>
-
-            <div id="grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-pro"></div>
-        </main>
-    </div>
-
-    <div id="modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 lg:p-10 no-print">
-        <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" onclick="closeModal()"></div>
-        <div class="relative bg-slate-900 w-full max-w-6xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row h-[85vh] border border-slate-700">
-            <div class="bg-[#0f172a] lg:w-80 p-8 border-r border-slate-800 flex flex-col items-center">
-                <div class="w-32 h-32 bg-slate-800 rounded-3xl flex items-center justify-center mb-6 border border-slate-700">
-                    <svg class="w-16 h-16 text-blue-500 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-width="1.5"/></svg>
-                </div>
-                <h2 id="m-name" class="text-xl font-bold uppercase text-center mb-2">--</h2>
-                <div id="m-badge" class="px-4 py-1 bg-blue-600 rounded-full text-[10px] font-bold uppercase tracking-widest mb-10">--</div>
-                
-                <div class="w-full space-y-4 mb-auto">
-                    <div class="p-4 bg-slate-800/50 rounded-2xl border border-slate-700">
-                        <p class="text-[8px] text-slate-500 font-bold uppercase mb-1">DNI</p>
-                        <p id="m-dni" class="text-xs font-bold text-blue-400 tracking-widest">--</p>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900">Rol de Combate</h1>
+                    <div id="sync-status" class="flex items-center gap-2 text-sm text-slate-500">
+                        <span class="flex items-center gap-1 text-emerald-600">
+                            <i data-lucide="cloud" class="w-3 h-3"></i> 
+                            Listo para sincronizar
+                        </span>
                     </div>
                 </div>
-
-                <div class="w-full space-y-3 mt-6">
-                    <button id="btnEdit" onclick="toggleEdit()" class="w-full py-4 bg-amber-500 text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-600 transition-all">Modificar</button>
-                    <button onclick="closeModal()" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-700 transition-all">Cerrar</button>
-                </div>
             </div>
-            <div class="flex-1 overflow-y-auto p-8 lg:p-12 bg-[#0b1120] hide-scroll">
-                <div id="m-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            
+            <div class="flex flex-wrap gap-2 w-full lg:w-auto">
+                <button onclick="fetchFromSheets()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 px-4 py-2.5 rounded-xl transition font-medium">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
+                    Actualizar Cloud
+                </button>
+                <label class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-4 py-2.5 rounded-xl cursor-pointer transition font-medium border border-indigo-100">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    Subir CSV
+                    <input type="file" id="csv-upload" class="hidden" accept=".csv">
+                </label>
+                <button onclick="openAddModal()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl transition shadow-sm font-medium">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Nuevo (1°)
+                </button>
+                <button onclick="exportToCSV()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl transition shadow-sm font-medium">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    Descargar
+                </button>
+            </div>
+        </header>
+
+        <!-- DASHBOARD STATS -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-xs font-bold text-slate-400 uppercase mb-1">Total Cadetes</p>
+                <p id="stat-total" class="text-3xl font-black text-slate-900">0</p>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-xs font-bold text-indigo-400 uppercase mb-1">2do Año</p>
+                <p id="stat-2do" class="text-3xl font-black text-indigo-600">0</p>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-xs font-bold text-purple-400 uppercase mb-1">3er Año</p>
+                <p id="stat-3er" class="text-3xl font-black text-purple-600">0</p>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-xs font-bold text-amber-400 uppercase mb-1">Incompletos</p>
+                <p id="stat-incomplete" class="text-3xl font-black text-amber-600">0</p>
+            </div>
+        </div>
+
+        <!-- FILTERS -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
+            <div class="lg:col-span-6 relative">
+                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                <input 
+                    type="text" 
+                    id="search-input"
+                    placeholder="Buscar por Apellido, Nombre, DNI..." 
+                    class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm transition"
+                >
+            </div>
+            <div class="lg:col-span-3">
+                <select 
+                    id="filter-year"
+                    class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm cursor-pointer appearance-none"
+                >
+                    <option value="Todos">Todos los cursos</option>
+                    <option value="1er Año">1er Año</option>
+                    <option value="2do Año">2do Año</option>
+                    <option value="3er Año">3er Año</option>
+                </select>
+            </div>
+            <div class="lg:col-span-3">
+                <button 
+                    id="toggle-incomplete"
+                    class="w-full h-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition font-medium shadow-sm"
+                >
+                    <i data-lucide="filter" class="w-5 h-5"></i>
+                    Ver Incompletos
+                </button>
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50/80 text-slate-500 text-xs font-bold uppercase tracking-wider">
+                            <th class="p-5">Cadete</th>
+                            <th class="p-5">DNI / CUIL</th>
+                            <th class="p-5 text-center">Curso</th>
+                            <th class="p-5">Ubicación</th>
+                            <th class="p-5">Estado Datos</th>
+                            <th class="p-5 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-slate-100">
+                        <!-- Filas insertadas por JS -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Paginación Simple -->
+            <div class="p-5 border-t border-slate-100 bg-white flex justify-between items-center">
+                <span id="pagination-info" class="text-xs font-medium text-slate-500">Mostrando 0 resultados</span>
+                <div class="flex gap-2">
+                    <button onclick="prevPage()" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                    <button onclick="nextPage()" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- MODAL EDITAR -->
+    <div id="modal-edit" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h2 class="text-xl font-bold text-slate-900">Ficha del Cadete</h2>
+                <button onclick="closeModals()" class="p-2 hover:bg-slate-200 rounded-full transition"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <form id="form-edit" class="p-6 overflow-y-auto flex-1 custom-scrollbar">
+                <div id="edit-fields-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Campos generados dinámicamente -->
+                </div>
+                <div class="flex justify-end gap-3 mt-8 pt-6 border-t">
+                    <button type="button" onclick="closeModals()" class="px-6 py-2.5 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+                    <button type="submit" class="px-8 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL NUEVO -->
+    <div id="modal-add" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div class="p-6 border-b border-emerald-100 flex justify-between items-center bg-emerald-50/50">
+                <h2 class="text-xl font-bold text-emerald-800 flex items-center gap-2"><i data-lucide="plus"></i> Alta de Nuevo Cadete</h2>
+                <button onclick="closeModals()" class="p-2 hover:bg-emerald-100 rounded-full transition"><i data-lucide="x" class="w-6 h-6 text-emerald-800"></i></button>
+            </div>
+            <form id="form-add" class="p-8 space-y-4">
+                <input type="text" name="Apellido" placeholder="Apellido" required class="w-full border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                <input type="text" name="Nombre" placeholder="Nombre" required class="w-full border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                <input type="text" name="DNI" placeholder="DNI" required class="w-full border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                <select name="Año" class="w-full border border-slate-200 p-3 rounded-xl outline-none bg-slate-50">
+                    <option value="1er Año">1er Año</option>
+                    <option value="2do Año">2do Año</option>
+                    <option value="3er Año">3er Año</option>
+                </select>
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+                    <button type="button" onclick="closeModals()" class="px-6 py-3 text-slate-500 font-semibold hover:bg-slate-100 rounded-xl transition">Descartar</button>
+                    <button type="submit" class="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition">Registrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        const DRIVE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSNtpB6_esSJ6zIOFZebrESmLM9xZF7xhTNaUJ0WgQ6qYCF9RkUqjAohSNWA8qaig/pub?output=csv";
-        let rawData = [];
-        let filtered = [];
-        let selCourse = "TODOS";
-        let activeIdx = null;
-        let isEdit = false;
-
-        async function fetchData() {
-            document.getElementById('loader').style.display = 'flex';
-            try {
-                const res = await fetch(DRIVE_URL);
-                const text = await res.text();
-                const wb = XLSX.read(text, { type: 'string' });
-                const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                
-                rawData = json.sort((a,b) => {
-                    const key = Object.keys(a).find(k => k.toLowerCase().includes('apellido')) || "";
-                    return String(a[key] || "").localeCompare(String(b[key] || ""));
-                });
-                
-                applyFilters();
-            } catch (e) { alert("Fallo de conexión. Cargue el archivo manualmente."); }
-            document.getElementById('loader').style.display = 'none';
-        }
-
-        function applyFilters() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            filtered = rawData.filter(c => {
-                const matchSearch = JSON.stringify(c).toLowerCase().includes(query);
-                const cursoKey = Object.keys(c).find(k => k.toLowerCase().includes('curso') || k.toLowerCase().includes('año'));
-                const matchCourse = selCourse === "TODOS" || String(c[cursoKey] || "").toUpperCase().includes(selCourse.split(' ')[0].toUpperCase());
-                return matchSearch && matchCourse;
-            });
-            renderGrid();
-        }
-
-        function renderGrid() {
-            const container = document.getElementById('grid');
-            container.innerHTML = "";
-            filtered.forEach((c, i) => {
-                const apeKey = Object.keys(c).find(k => k.toLowerCase().includes('apellido')) || "";
-                const nomKey = Object.keys(c).find(k => k.toLowerCase().includes('nombre')) || "";
-                const dniKey = Object.keys(c).find(k => k.toLowerCase().includes('dni') || k.toLowerCase().includes('documento')) || "";
-                const cursoKey = Object.keys(c).find(k => k.toLowerCase().includes('curso') || k.toLowerCase().includes('año')) || "";
-
-                const card = document.createElement('div');
-                card.onclick = () => openModal(i);
-                card.className = "card-dark p-6 rounded-[2rem] cursor-pointer flex flex-col h-full";
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-6">
-                        <div class="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center text-blue-500">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-width="2"/></svg>
-                        </div>
-                        <span class="text-[9px] font-bold text-slate-500 uppercase">${c[cursoKey] || "SIN CURSO"}</span>
-                    </div>
-                    <h3 class="text-base font-black uppercase mb-1">${c[apeKey] || "SIN APELLIDO"}</h3>
-                    <p class="text-slate-400 text-xs font-semibold mb-6">${c[nomKey] || "SIN NOMBRE"}</p>
-                    <div class="mt-auto pt-4 border-t border-slate-800 flex justify-between items-center">
-                        <span class="text-[9px] text-slate-600 font-bold uppercase">DNI: ${c[dniKey] || "-"}</span>
-                        <span class="text-[9px] text-blue-500 font-black uppercase tracking-tighter">Ver Expediente →</span>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-            document.getElementById('totalCount').innerText = rawData.length;
-            document.getElementById('filteredCount').innerText = filtered.length;
-        }
-
-        function openModal(i) {
-            activeIdx = i; isEdit = false; updateModalUI();
-            document.getElementById('modal').classList.replace('hidden', 'flex');
-        }
-
-        function updateModalUI() {
-            const c = filtered[activeIdx];
-            const apeKey = Object.keys(c).find(k => k.toLowerCase().includes('apellido')) || "";
-            const nomKey = Object.keys(c).find(k => k.toLowerCase().includes('nombre')) || "";
-            const dniKey = Object.keys(c).find(k => k.toLowerCase().includes('dni') || k.toLowerCase().includes('documento')) || "";
-            const cursoKey = Object.keys(c).find(k => k.toLowerCase().includes('curso') || k.toLowerCase().includes('año')) || "";
-
-            document.getElementById('m-name').innerText = `${c[apeKey] || ""} ${c[nomKey] || ""}`;
-            document.getElementById('m-badge').innerText = c[cursoKey] || "S/D";
-            document.getElementById('m-dni').innerText = c[dniKey] || "S/D";
-            document.getElementById('btnEdit').innerText = isEdit ? "GUARDAR" : "MODIFICAR";
-
-            const grid = document.getElementById('m-fields');
-            grid.innerHTML = "";
-            Object.entries(c).forEach(([k, v]) => {
-                const box = document.createElement('div');
-                box.className = "p-4 bg-slate-800/30 border border-slate-700 rounded-2xl";
-                box.innerHTML = `<label class="block text-[8px] text-slate-500 font-bold uppercase mb-2">${k}</label>`;
-                if(isEdit) {
-                    const input = document.createElement('input');
-                    input.className = "w-full bg-slate-900 border-none text-xs font-bold text-white focus:ring-0 p-0";
-                    input.value = v || "";
-                    input.onchange = (e) => { filtered[activeIdx][k] = e.target.value; };
-                    box.appendChild(input);
-                } else {
-                    box.innerHTML += `<p class="text-xs font-bold text-slate-200 break-words leading-tight">${v || "-"}</p>`;
-                }
-                grid.appendChild(box);
-            });
-        }
-
-        function toggleEdit() { isEdit = !isEdit; if(!isEdit) applyFilters(); updateModalUI(); }
-        function closeModal() { document.getElementById('modal').classList.replace('flex', 'hidden'); }
-        
-        function renderFilters() {
-            const c = ["TODOS", "1er Año", "2do Año", "3er Año"];
-            const nav = document.getElementById('courseFilters');
-            c.forEach(opt => {
-                const b = document.createElement('button');
-                b.onclick = () => { selCourse = opt; renderFilters(); applyFilters(); };
-                b.className = `w-full px-4 py-3 rounded-xl text-[10px] font-bold uppercase text-left transition-all ${selCourse===opt ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-800'}`;
-                b.innerText = opt;
-                nav.appendChild(b);
-            });
-        }
-
-        document.getElementById('fileInput').onchange = (e) => {
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                const wb = XLSX.read(evt.target.result, { type: 'binary' });
-                rawData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                applyFilters();
-            };
-            reader.readAsBinaryString(e.target.files[0]);
+        // --- CONFIGURACIÓN: PEGA TUS LINKS CSV DE GOOGLE SHEETS AQUÍ ---
+        const SHEET_URLS = {
+            '2do Año': '', // Link CSV 2do
+            '3er Año': '', // Link CSV 3er
+            '1er Año': ''  // Link CSV 1er (opcional por ahora)
         };
 
-        window.onload = () => { renderFilters(); fetchData(); };
+        // Estado Global
+        let students = [];
+        let searchTerm = '';
+        let filterYear = 'Todos';
+        let showIncompleteOnly = false;
+        let currentPage = 1;
+        const itemsPerPage = 12;
+        let editingId = null;
+
+        // Campos críticos para el reporte de completitud
+        const criticalFields = ['Apellido', 'Nombre', 'DNI', 'CUIL', 'Celular', 'LOCALIDAD3', 'CORREO ELECTRONICO'];
+
+        // Inicializar iconos
+        function initIcons() { lucide.createIcons(); }
+
+        // Sincronizar con Google Sheets
+        async function fetchFromSheets() {
+            const btn = document.getElementById('refresh-icon');
+            btn.classList.add('animate-spin');
+            
+            let allData = [];
+            try {
+                for (const [year, url] of Object.entries(SHEET_URLS)) {
+                    if (!url) continue;
+                    const response = await fetch(url);
+                    const text = await response.text();
+                    const parsed = parseCSV(text, year);
+                    allData = [...allData, ...parsed];
+                }
+                
+                if (allData.length > 0) {
+                    students = allData;
+                    document.getElementById('sync-status').innerHTML = `
+                        <span class="flex items-center gap-1 text-emerald-600">
+                            <i data-lucide="check-circle" class="w-3 h-3"></i> 
+                            Sincronizado: ${new Date().toLocaleTimeString()}
+                        </span>`;
+                    render();
+                }
+            } catch (e) {
+                console.error("Error Sheets:", e);
+                alert("Error al conectar con Google Sheets. Verifica los enlaces CSV.");
+            } finally {
+                btn.classList.remove('animate-spin');
+                initIcons();
+            }
+        }
+
+        // Parser de CSV básico
+        function parseCSV(text, yearLabel) {
+            const lines = text.split('\n').filter(l => l.trim() !== '');
+            if (lines.length < 2) return [];
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            
+            return lines.slice(1).map(line => {
+                // Regex para manejar comas dentro de comillas
+                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
+                const obj = {};
+                headers.forEach((h, i) => obj[h] = values[i] || '');
+                obj.id = Math.random().toString(36).substr(2, 9);
+                if (yearLabel && !obj['Año']) obj['Año'] = yearLabel;
+                return obj;
+            });
+        }
+
+        // Calcular completitud
+        function getCompleteness(student) {
+            const total = criticalFields.length;
+            const completed = criticalFields.filter(f => student[f] && String(student[f]).trim() !== '').length;
+            return (completed / total) * 100;
+        }
+
+        // RENDERIZADO PRINCIPAL
+        function render() {
+            const filtered = students.filter(s => {
+                const searchStr = `${s.Nombre} ${s.Apellido} ${s.DNI}`.toLowerCase();
+                const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
+                const matchesYear = filterYear === 'Todos' || s['Año'] === filterYear;
+                const isMissing = showIncompleteOnly ? getCompleteness(s) < 100 : true;
+                return matchesSearch && matchesYear && isMissing;
+            });
+
+            // Stats
+            document.getElementById('stat-total').innerText = students.length;
+            document.getElementById('stat-2do').innerText = students.filter(s => s['Año']?.includes('2')).length;
+            document.getElementById('stat-3er').innerText = students.filter(s => s['Año']?.includes('3')).length;
+            document.getElementById('stat-incomplete').innerText = students.filter(s => getCompleteness(s) < 100).length;
+
+            // Tabla
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageData = filtered.slice(start, end);
+            const tbody = document.getElementById('table-body');
+            
+            tbody.innerHTML = pageData.map(s => {
+                const comp = getCompleteness(s);
+                const colorClass = comp === 100 ? 'bg-emerald-500' : comp > 60 ? 'bg-amber-400' : 'bg-rose-500';
+                const yearClass = s['Año']?.includes('1') ? 'bg-sky-100 text-sky-700' : s['Año']?.includes('2') ? 'bg-indigo-100 text-indigo-700' : 'bg-violet-100 text-violet-700';
+
+                return `
+                    <tr class="hover:bg-indigo-50/30 transition-colors">
+                        <td class="p-5">
+                            <div class="font-bold text-slate-900">${s.Apellido}, ${s.Nombre}</div>
+                            <div class="text-xs text-slate-400 mt-0.5">${s.Celular || 'Sin teléfono'}</div>
+                        </td>
+                        <td class="p-5">
+                            <div class="text-sm font-medium text-slate-700">${s.DNI}</div>
+                            <div class="text-[10px] text-slate-400 font-mono tracking-tighter">${s.CUIL || '-'}</div>
+                        </td>
+                        <td class="p-5 text-center">
+                            <span class="inline-block px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase ${yearClass}">
+                                ${s['Año'] || 'S/D'}
+                            </span>
+                        </td>
+                        <td class="p-5">
+                            <div class="text-sm text-slate-600 truncate max-w-[150px]">${s.LOCALIDAD3 || s.Localidad || '-'}</div>
+                        </td>
+                        <td class="p-5 min-w-[140px]">
+                            <div class="flex items-center gap-2">
+                                <div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                    <div class="h-full transition-all duration-500 rounded-full ${colorClass}" style="width: ${comp}%"></div>
+                                </div>
+                                <span class="text-[10px] font-bold text-slate-500 w-8 text-right">${Math.round(comp)}%</span>
+                            </div>
+                        </td>
+                        <td class="p-5 text-right">
+                            <div class="flex justify-end gap-1">
+                                <button onclick="openEditModal('${s.id}')" class="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                <button onclick="deleteStudent('${s.id}')" class="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-20 text-center text-slate-400 italic">No se encontraron resultados</td></tr>`;
+            }
+
+            document.getElementById('pagination-info').innerText = `Mostrando ${pageData.length} de ${filtered.length} resultados`;
+            initIcons();
+        }
+
+        // ACCIONES
+        function deleteStudent(id) {
+            if (confirm("¿Eliminar este registro permanentemente?")) {
+                students = students.filter(s => s.id !== id);
+                render();
+            }
+        }
+
+        function openEditModal(id) {
+            const s = students.find(x => x.id === id);
+            if (!s) return;
+            editingId = id;
+            const container = document.getElementById('edit-fields-container');
+            container.innerHTML = Object.keys(s).filter(k => k !== 'id').map(key => `
+                <div>
+                    <label class="block text-[10px] font-bold uppercase mb-1 ${criticalFields.includes(key) ? 'text-indigo-600' : 'text-slate-400'}">
+                        ${key} ${criticalFields.includes(key) ? '*' : ''}
+                    </label>
+                    <input type="text" name="${key}" value="${s[key]}" class="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+            `).join('');
+            document.getElementById('modal-edit').classList.add('active');
+            initIcons();
+        }
+
+        function openAddModal() {
+            document.getElementById('modal-add').classList.add('active');
+            initIcons();
+        }
+
+        function closeModals() {
+            document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+            editingId = null;
+        }
+
+        // EVENT LISTENERS
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            searchTerm = e.target.value;
+            currentPage = 1;
+            render();
+        });
+
+        document.getElementById('filter-year').addEventListener('change', (e) => {
+            filterYear = e.target.value;
+            currentPage = 1;
+            render();
+        });
+
+        document.getElementById('toggle-incomplete').addEventListener('click', () => {
+            showIncompleteOnly = !showIncompleteOnly;
+            const btn = document.getElementById('toggle-incomplete');
+            btn.classList.toggle('bg-amber-50');
+            btn.classList.toggle('border-amber-300');
+            btn.classList.toggle('text-amber-700');
+            render();
+        });
+
+        document.getElementById('form-edit').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = {};
+            formData.forEach((v, k) => data[k] = v);
+            students = students.map(s => s.id === editingId ? { ...s, ...data } : s);
+            closeModals();
+            render();
+        });
+
+        document.getElementById('form-add').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = { id: Math.random().toString(36).substr(2, 9) };
+            formData.forEach((v, k) => data[k] = v);
+            students = [data, ...students];
+            closeModals();
+            e.target.reset();
+            render();
+        });
+
+        document.getElementById('csv-upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                students = [...parseCSV(ev.target.result), ...students];
+                render();
+            };
+            reader.readAsText(file);
+        });
+
+        function exportToCSV() {
+            if (students.length === 0) return;
+            const headers = Object.keys(students[0]).filter(k => k !== 'id');
+            const csvRows = [headers.join(','), ...students.map(row => headers.map(h => `"${row[h] || ''}"`).join(','))];
+            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `rol_combate_${new Date().toLocaleDateString()}.csv`;
+            link.click();
+        }
+
+        function nextPage() { if (currentPage * itemsPerPage < students.length) { currentPage++; render(); } }
+        function prevPage() { if (currentPage > 1) { currentPage--; render(); } }
+
+        // Carga inicial
+        window.onload = () => {
+            initIcons();
+            fetchFromSheets();
+        };
     </script>
 </body>
 </html>
