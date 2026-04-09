@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Search, 
   User, 
@@ -7,29 +7,25 @@ import {
   ChevronRight, 
   Calendar,
   ShieldCheck,
-  FileSpreadsheet,
-  RefreshCw,
   Upload,
   Info,
-  HeartPulse,
-  Users,
-  Home,
-  GraduationCap,
-  Activity
+  Edit3,
+  Save,
+  X,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 
-// --- UTILIDADES DE PROCESAMIENTO ---
+// --- UTILIDADES ---
 const calculateAge = (birthDate) => {
   if (!birthDate || birthDate === "S/D" || birthDate === "") return "S/D";
-  // Manejar diferentes formatos de fecha (YYYY-MM-DD o DD/MM/YYYY)
   let birth;
-  if (birthDate.includes('/')) {
-    const [d, m, y] = birthDate.split('/');
+  if (String(birthDate).includes('/')) {
+    const [d, m, y] = String(birthDate).split('/');
     birth = new Date(`${y}-${m}-${d}`);
   } else {
     birth = new Date(birthDate);
   }
-  
   if (isNaN(birth.getTime())) return "S/D";
   const now = new Date("2026-04-08"); 
   let age = now.getFullYear() - birth.getFullYear();
@@ -43,14 +39,13 @@ const standardizeDNI = (dni) => {
   return dni.toString().replace(/[^0-9]/g, '');
 };
 
-// --- DATOS PRE-CARGADOS (EXTRACCIÓN EXTENSA DE TUS ARCHIVOS) ---
+// --- DATOS INICIALES ---
 const INITIAL_RECORDS = [
-  // 3er Año - Basado en ROL DE COMBATE (3)
   {
     "Apellido": "FRIAS",
     "Nombre": "ARIEL ARMANDO",
     "DNI": "44742442",
-    "FechaNac": "2003-04-24",
+    "Fecha Nacimiento": "2003-04-24",
     "Año": "3er Año",
     "CUIL": "20447424429",
     "Sexo": "MASCULINO",
@@ -63,387 +58,345 @@ const INITIAL_RECORDS = [
     "Grupo Sangre": "0 POSITIVO (+)",
     "UR": "U.R. CAPITAL",
     "Instagram": "frias_ariel17",
-    "Jerarquia": "CADETE",
-    "Niv Academico": "SECUNDARIO"
+    "Jerarquia": "CADETE"
   },
   {
     "Apellido": "RAMOS",
     "Nombre": "TOBÍAS AGUSTÍN",
     "DNI": "45196805",
-    "FechaNac": "2004-03-31",
+    "Fecha Nacimiento": "2004-03-31",
     "Año": "3er Año",
     "CUIL": "20451968050",
     "Legajo": "20344",
     "Estatura": "174",
     "Peso": "75",
     "IMC": "24.77",
-    "Estado IMC": "NORMAL",
     "Grupo Sangre": "0 POSITIVO (+)",
-    "UR": "U.R. CAPITAL",
-    "Jerarquia": "CADETE"
+    "UR": "U.R. CAPITAL"
   },
   {
     "Apellido": "SORIA",
     "Nombre": "LUCAS",
     "DNI": "45184734",
-    "FechaNac": "2003-12-17",
+    "Fecha Nacimiento": "2003-12-17",
     "Año": "3er Año",
-    "CUIL": "20-45184734-2",
-    "Legajo": "20351",
-    "Estatura": "173",
-    "Peso": "78",
-    "IMC": "26.06",
-    "Estado IMC": "SOBREPESO",
     "Localidad": "BOCA DEL TIGRE",
-    "Departamento": "BURRUYACU",
     "Domicilio": "BARRIO PORTAL DEL CHAÑAR MZ. E CASA 8",
-    "Comisaria": "COMISARIA DEL CHAÑAR",
     "Celular": "3813937426",
-    "Hermanos": "['H1:SORIA FABIAN ESTEBAN', 'H2:SORIA AIXA YANETH']",
-    "Jerarquia": "CADETE"
+    "IMC": "26.06"
   },
-  // 2do Año - Basado en ROLL DE COMBATE I AÑO
   {
     "Apellido": "SORIA",
     "Nombre": "LEONEL",
     "DNI": "46145229",
-    "FechaNac": "2004-08-01",
+    "Fecha Nacimiento": "2004-08-01",
     "Año": "2do Año",
-    "CUIL": "S/D",
     "Localidad": "Lastenia",
-    "Domicilio Real": "Lastenia, B° La cerámica",
     "Celular": "3815833923",
-    "Correo Electronico": "soria.leonel62@gmail.com",
-    "Título Secundario": "POLIMODAL MODALIDAD ECONOMIA Y GESTIÓN",
-    "Institucion": "EESCUELA DE COMERCIO DE BANDA DEL RIO SALI",
-    "Madre": "Galvan Lorena Cecilia (32741747)",
-    "Padre": "Soria Juan Omar (30109756)"
-  },
-  {
-    "Apellido": "SUELDO",
-    "Nombre": "RODRIGO GASTÓN",
-    "DNI": "45186845",
-    "FechaNac": "2004-01-19",
-    "Año": "2do Año",
-    "Celular": "3815460709",
-    "Localidad": "Lastenia",
-    "Estado Civil": "SOLTERO/A",
-    "Grupo Sanguíneo": "0 POSITIVO (+)",
-    "CUIL": "20451868452"
+    "Madre": "Galvan Lorena Cecilia",
+    "Padre": "Soria Juan Omar"
   }
 ];
 
-const parseCSV = (text) => {
-  const lines = text.split(/\r?\n/);
-  if (lines.length === 0) return [];
-  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-  return lines.slice(1).filter(line => line.trim() !== "").map(line => {
-    const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    const obj = {};
-    headers.forEach((header, i) => {
-      obj[header] = values[i] ? values[i].trim().replace(/"/g, '') : "";
-    });
-    return obj;
-  });
-};
-
 const App = () => {
-  const [extraData, setExtraData] = useState([]);
+  const [cadetes, setCadetes] = useState(INITIAL_RECORDS);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCourse, setSelectedCourse] = useState("TODOS");
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUserDNI, setSelectedUserDNI] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [viewMode, setViewMode] = useState('grid');
 
-  const unifiedData = useMemo(() => {
-    const masterMap = new Map();
-
-    // Función para encontrar valor en un objeto ignorando mayúsculas/espacios
-    const findValue = (obj, pattern) => {
-      const key = Object.keys(obj).find(k => k.toUpperCase().includes(pattern.toUpperCase()));
-      return key ? obj[key] : null;
-    };
-
-    // Procesar todos los registros (Pre-cargados + Subidos)
-    const allSources = [...INITIAL_RECORDS, ...extraData];
-
-    allSources.forEach(row => {
-      // Identificar DNI como llave única
-      const dni = standardizeDNI(findValue(row, "DNI") || findValue(row, "DOCUMENTO") || row.DNI);
-      if (!dni) return;
-
-      const existing = masterMap.get(dni) || {};
-      
-      // Normalización para la vista rápida
-      const normalized = {
-        Apellido: (findValue(row, "APELLIDO") || existing.Apellido || "S/D").toUpperCase(),
-        Nombre: (findValue(row, "NOMBRE") || existing.Nombre || "S/D").toUpperCase(),
-        DNI: dni,
-        FechaNac: findValue(row, "FECHA NAC") || findValue(row, "NACIMIENTO") || existing.FechaNac || "S/D",
-        Año: row.Año || (findValue(row, "Legajo") ? "3er Año" : "2do Año") || existing.Año,
-        Celular: findValue(row, "CELULAR") || findValue(row, "TELÉFONO") || existing.Celular || "-",
-        Localidad: findValue(row, "LOCALIDAD") || existing.Localidad || "-",
-        Legajo: findValue(row, "LEGAJO") || existing.Legajo || "-",
-        CUIL: findValue(row, "CUIL") || existing.CUIL || "-",
-      };
-
-      // Fusionar TODAS las columnas sin perder información
-      masterMap.set(dni, { ...existing, ...row, ...normalized });
-    });
-
-    return Array.from(masterMap.values()).map(user => ({
-      ...user,
-      EdadActual: calculateAge(user.FechaNac)
-    }));
-  }, [extraData]);
+  // Procesar datos para la vista (DNI estandarizado y Edad)
+  const processedData = useMemo(() => {
+    return cadetes.map(c => ({
+      ...c,
+      _dni: standardizeDNI(c.DNI || c.DOCUMENTO),
+      _edad: calculateAge(c["Fecha Nacimiento"] || c.NACIMIENTO || c.FECHA_NAC)
+    })).sort((a, b) => (a.Apellido || "").localeCompare(b.Apellido || ""));
+  }, [cadetes]);
 
   const filteredData = useMemo(() => {
-    return unifiedData.filter(user => {
-      const searchStr = `${user.Apellido} ${user.Nombre} ${user.DNI} ${user.Localidad} ${user.Legajo}`.toLowerCase();
+    return processedData.filter(user => {
+      const searchStr = Object.values(user).join(" ").toLowerCase();
       const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
       const matchesCourse = selectedCourse === "TODOS" || user.Año === selectedCourse;
       return matchesSearch && matchesCourse;
     });
-  }, [unifiedData, searchTerm, selectedCourse]);
+  }, [processedData, searchTerm, selectedCourse]);
+
+  const currentUser = useMemo(() => 
+    processedData.find(u => u._dni === selectedUserDNI), 
+  [processedData, selectedUserDNI]);
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
-      const data = parseCSV(event.target.result);
-      setExtraData(prev => [...prev, ...data]);
+      const text = event.target.result;
+      const lines = text.split(/\r?\n/);
+      if (lines.length < 2) return;
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const newData = lines.slice(1).filter(l => l.trim() !== "").map(line => {
+        const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+        const obj = {};
+        headers.forEach((header, i) => {
+          obj[header] = values[i] ? values[i].trim().replace(/"/g, '') : "";
+        });
+        return obj;
+      });
+      setCadetes(prev => [...prev, ...newData]);
     };
     reader.readAsText(file);
   };
 
-  // Función para agrupar campos del modal
-  const getFieldGroups = (user) => {
-    const categories = {
-      Identidad: ["DNI", "CUIL", "SEXO", "FECHA NAC", "EST. CIVIL", "ESTADO CIVIL", "NACIONALIDAD", "RELIGIÓN"],
-      Salud: ["ESTATURA", "PESO", "IMC", "ESTADO IMC", "GRUPO SANGRE", "GRUPO SANGUÍNEO", "ENFERMEDADES", "TRAUMAS", "TABACO", "ALCOHOL", "ACT FISICA", "DIETA"],
-      Domicilio: ["DOMICILIO", "DOMICILIO REAL", "LOCALIDAD", "DEPARTAMENTO", "COMISARIA", "COMISARIA JURISDICCIONAL", "ALQUILA"],
-      Familiar: ["MADRE", "PADRE", "HERMANOS", "CONVIVIENTES", "ANT FAMILIARES"],
-      Academico: ["NIV ACADEMICO", "TITULO", "TÍTULO SECUNDARIO", "NOMBRE DE INSTITUCION", "OTRO", "TRABAJO", "JERARQUIA", "LEGAJO", "PRONTUARIO"]
-    };
+  const startEdit = () => {
+    setEditForm({ ...currentUser });
+    setIsEditing(true);
+  };
 
-    const grouped = {};
-    const usedKeys = new Set(['_source', '_merged', 'EdadActual', 'Apellido', 'Nombre', 'DNI', 'Año', 'Localidad', 'Celular', 'Legajo', 'FechaNac']);
-
-    Object.entries(categories).forEach(([cat, keywords]) => {
-      grouped[cat] = Object.entries(user).filter(([key]) => {
-        if (usedKeys.has(key)) return false;
-        const isMatch = keywords.some(kw => key.toUpperCase().includes(kw));
-        if (isMatch) usedKeys.add(key);
-        return isMatch;
-      });
-    });
-
-    // Lo que sobre va a "Otros"
-    grouped.Otros = Object.entries(user).filter(([key]) => !usedKeys.has(key));
-
-    return grouped;
+  const saveEdit = () => {
+    setCadetes(prev => prev.map(c => 
+      standardizeDNI(c.DNI || c.DOCUMENTO) === selectedUserDNI ? { ...c, ...editForm } : c
+    ));
+    setIsEditing(false);
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans flex">
-      {/* Sidebar Táctico */}
-      <aside className="hidden lg:flex w-72 bg-[#0f172a] text-white p-6 flex-col flex-shrink-0 sticky top-0 h-screen border-r border-white/5 shadow-2xl">
-        <div className="flex items-center gap-3 mb-10 px-2">
+    <div className="min-h-screen bg-[#f1f5f9] text-slate-900 font-sans flex flex-col lg:flex-row">
+      
+      {/* Sidebar */}
+      <aside className="w-full lg:w-72 bg-[#0f172a] text-white p-6 flex flex-col flex-shrink-0 lg:sticky lg:top-0 lg:h-screen border-r border-white/5 shadow-2xl">
+        <div className="flex items-center gap-3 mb-10">
           <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-500/30">
             <ShieldCheck className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-sm font-black tracking-[0.2em] uppercase text-blue-400">Sistema Rol</h1>
-            <h1 className="text-lg font-bold tracking-tight text-white/90">de Combate</h1>
+            <h1 className="text-sm font-black tracking-widest uppercase text-blue-400">Rol de Combate</h1>
+            <h1 className="text-xs font-medium opacity-50 uppercase tracking-tighter">Gestión Institucional</h1>
           </div>
         </div>
 
-        <nav className="space-y-1.5 flex-1">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 px-2">Filtrar por Curso</p>
-          {["TODOS", "2do Año", "3er Año"].map(course => (
+        <nav className="space-y-1 flex-1">
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 px-2">Cursos</p>
+          {["TODOS", "1er Año", "2do Año", "3er Año"].map(course => (
             <button
               key={course}
               onClick={() => setSelectedCourse(course)}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${selectedCourse === course ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${selectedCourse === course ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'}`}
             >
-              <span className="font-semibold text-sm">{course}</span>
-              {selectedCourse === course && <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />}
+              <span className="font-bold text-xs uppercase tracking-tight">{course}</span>
+              {selectedCourse === course && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
             </button>
           ))}
         </nav>
 
-        <div className="pt-6 border-t border-white/5 mt-auto">
-          <div className="relative overflow-hidden">
-            <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors cursor-pointer group">
-              <Upload className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
-              <div>
-                <p className="text-xs font-bold">Importar Archivo</p>
-                <p className="text-[9px] text-slate-500">Cargar Excel (CSV)</p>
-              </div>
+        <div className="mt-8 pt-6 border-t border-white/5">
+          <label className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-blue-600/20 transition-all cursor-pointer group">
+            <Upload className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
+            <div className="text-left">
+              <p className="text-xs font-bold">Importar Excel</p>
+              <p className="text-[9px] text-slate-500 uppercase">Cargar archivo CSV</p>
             </div>
-            <input type="file" accept=".csv" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-          </div>
+            <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
+          </label>
         </div>
       </aside>
 
       {/* Main View */}
-      <main className="flex-1 min-w-0">
-        <header className="bg-white/70 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-40 p-4 lg:p-6 flex flex-col md:flex-row items-center gap-4">
-          <div className="relative w-full max-w-xl group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-600 transition-colors" />
+      <main className="flex-1 min-w-0 flex flex-col">
+        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 p-4 lg:p-6 flex flex-col md:flex-row items-center gap-4">
+          <div className="relative w-full max-w-xl">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input 
               type="text"
-              placeholder="Buscar por DNI, Apellido o Localidad..."
-              className="w-full pl-12 pr-4 py-3 bg-slate-100 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all outline-none font-medium"
+              placeholder="Búsqueda global: DNI, Apellido, Localidad, etc..."
+              className="w-full pl-12 pr-4 py-3.5 bg-slate-100 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all outline-none font-semibold text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex gap-2 ml-auto">
-            <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 flex flex-col items-center min-w-[80px]">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Total</span>
-              <span className="text-lg font-bold text-slate-900">{filteredData.length}</span>
+          
+          <div className="flex items-center gap-2 ml-auto">
+            <div className="flex bg-slate-200 p-1 rounded-xl mr-4">
+              <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><LayoutGrid size={18} /></button>
+              <button onClick={() => setViewMode('table')} className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><List size={18} /></button>
             </div>
-            <div className="bg-slate-900 px-4 py-2 rounded-xl shadow-lg shadow-slate-200 flex flex-col items-center text-white min-w-[100px]">
-              <span className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">Hoy</span>
-              <span className="text-sm font-bold">08/04/2026</span>
+            <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 flex flex-col items-center">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Activos</span>
+              <span className="text-lg font-black text-slate-900">{filteredData.length}</span>
             </div>
           </div>
         </header>
 
-        <div className="p-4 lg:p-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-          {filteredData.map((user, idx) => (
-            <div 
-              key={idx} 
-              className="bg-white rounded-[1.5rem] p-5 border border-slate-200 hover:border-blue-500/30 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group relative overflow-hidden h-full flex flex-col"
-              onClick={() => setSelectedUser(user)}
-            >
-              {/* Decoración Superior */}
-              <div className={`absolute top-0 left-0 w-1 h-full ${user.Año === "3er Año" ? 'bg-amber-400' : 'bg-blue-500'}`} />
-
-              <div className="flex justify-between items-start mb-4">
-                <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                  <User className="w-6 h-6" />
-                </div>
-                <div className="text-right">
-                  <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${user.Año === "3er Año" ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-blue-50 text-blue-700 border border-blue-100'}`}>
-                    {user.Año}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="mb-6 flex-1">
-                <h3 className="text-base font-black text-slate-800 leading-tight group-hover:text-blue-600 transition-colors uppercase">
-                  {user.Apellido}
-                </h3>
-                <h4 className="text-sm font-semibold text-slate-500 mb-3">{user.Nombre}</h4>
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400 font-medium">DNI</span>
-                    <span className="text-slate-700 font-bold tracking-wider">{user.DNI}</span>
+        <div className="p-4 lg:p-8 flex-1 overflow-auto">
+          {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+              {filteredData.map((user) => (
+                <div 
+                  key={user._dni} 
+                  className="bg-white rounded-[2rem] p-6 border border-slate-200 shadow-sm hover:shadow-2xl hover:border-blue-500/30 transition-all cursor-pointer group flex flex-col"
+                  onClick={() => setSelectedUserDNI(user._dni)}
+                >
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                      <User size={24} />
+                    </div>
+                    <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black uppercase text-slate-500">{user.Año || "S/D"}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400 font-medium">Edad Actual</span>
-                    <span className="text-blue-600 font-bold">{user.EdadActual} años</span>
+                  
+                  <div className="mb-6 flex-1">
+                    <h3 className="text-lg font-black text-slate-900 leading-tight uppercase mb-1">{user.Apellido}</h3>
+                    <p className="text-sm font-semibold text-slate-500 mb-4">{user.Nombre}</p>
+                    <div className="grid grid-cols-2 gap-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                      <div>
+                        <p className="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">Documento</p>
+                        <p className="text-xs font-bold text-slate-800 tracking-wider">{user._dni}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">Edad</p>
+                        <p className="text-xs font-black text-blue-600">{user._edad} años</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-slate-400 pt-4 border-t border-slate-50">
+                    <MapPin size={12} className="text-blue-500" />
+                    <span className="text-[10px] font-bold uppercase truncate">{user.Localidad || "-"}</span>
+                    <ChevronRight size={14} className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-50 flex items-center gap-3 text-slate-400">
-                <MapPin className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-bold uppercase truncate">{user.Localidad}</span>
-                <ChevronRight className="w-4 h-4 ml-auto text-slate-300 group-hover:text-blue-600 transition-colors" />
-              </div>
+              ))}
             </div>
-          ))}
+          ) : (
+            <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="p-4 text-[10px] font-black uppercase text-slate-500">Apellido y Nombre</th>
+                    <th className="p-4 text-[10px] font-black uppercase text-slate-500">DNI</th>
+                    <th className="p-4 text-[10px] font-black uppercase text-slate-500">Curso</th>
+                    <th className="p-4 text-[10px] font-black uppercase text-slate-500">Localidad</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredData.map(user => (
+                    <tr 
+                      key={user._dni} 
+                      className="hover:bg-blue-50 cursor-pointer transition-colors"
+                      onClick={() => setSelectedUserDNI(user._dni)}
+                    >
+                      <td className="p-4"><span className="font-bold text-sm uppercase">{user.Apellido}, {user.Nombre}</span></td>
+                      <td className="p-4"><span className="text-sm font-mono text-slate-600">{user._dni}</span></td>
+                      <td className="p-4"><span className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black rounded uppercase">{user.Año}</span></td>
+                      <td className="p-4 text-xs font-semibold text-slate-500 uppercase">{user.Localidad}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </main>
 
-      {/* Modal - Vista de 360 grados de todos los datos */}
-      {selectedUser && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-8">
-          <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-xl" onClick={() => setSelectedUser(null)} />
+      {/* Modal - Expediente con Edición Dinámica */}
+      {currentUser && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-10">
+          <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-xl" onClick={() => { if(!isEditing) setSelectedUserDNI(null); }} />
           
-          <div className="relative bg-white w-full max-w-6xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row h-[90vh] animate-in zoom-in duration-300">
-            {/* Perfil Izquierdo */}
-            <div className="bg-[#0f172a] w-full lg:w-80 p-8 text-white flex flex-col flex-shrink-0">
-              <div className="w-32 h-32 bg-white/10 rounded-3xl mx-auto flex items-center justify-center mb-6 border border-white/10 relative">
-                <User className="w-16 h-16 text-blue-400" />
-                <div className="absolute -bottom-2 -right-2 bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-900/50">
-                  <ShieldCheck className="w-5 h-5" />
+          <div className="relative bg-white w-full max-w-7xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row h-[90vh] animate-in zoom-in duration-300">
+            
+            {/* Cabecera / Perfil Lateral */}
+            <div className="bg-[#0f172a] w-full lg:w-96 p-10 text-white flex flex-col flex-shrink-0 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-3xl rounded-full -mr-10 -mt-10" />
+              
+              <div className="text-center relative z-10">
+                <div className="w-36 h-36 bg-white/5 rounded-[2.5rem] mx-auto flex items-center justify-center mb-8 border border-white/10 shadow-2xl">
+                  <User size={60} className="text-blue-400 opacity-60" />
+                </div>
+                <h2 className="text-3xl font-black uppercase leading-none mb-2">{currentUser.Apellido}</h2>
+                <h3 className="text-xl font-light text-slate-400 leading-tight mb-8">{currentUser.Nombre}</h3>
+                <div className="inline-block px-5 py-2 bg-blue-600 rounded-full text-[11px] font-black uppercase tracking-[0.2em] shadow-xl">
+                  {currentUser.Año}
                 </div>
               </div>
 
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-black uppercase leading-none mb-1">{selectedUser.Apellido}</h2>
-                <h3 className="text-lg font-light text-slate-400 leading-tight">{selectedUser.Nombre}</h3>
-                <p className="mt-4 inline-block px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-blue-400 tracking-widest uppercase">
-                  {selectedUser.Año}
-                </p>
+              <div className="mt-auto space-y-3 relative z-10 pt-10">
+                {!isEditing ? (
+                  <button 
+                    onClick={startEdit}
+                    className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                  >
+                    <Edit3 size={16} /> Modificar Ficha
+                  </button>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <button 
+                      onClick={saveEdit}
+                      className="py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                    >
+                      <Save size={16} /> Guardar
+                    </button>
+                    <button 
+                      onClick={() => setIsEditing(false)}
+                      className="py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                    >
+                      <X size={16} /> Cancelar
+                    </button>
+                  </div>
+                )}
+                <button 
+                  onClick={() => { setIsEditing(false); setSelectedUserDNI(null); }}
+                  className="w-full py-4 text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+                >
+                  Cerrar Expediente
+                </button>
               </div>
-
-              <div className="space-y-4 pt-6 border-t border-white/5">
-                <div className="flex items-center gap-3 text-sm">
-                  <Phone className="w-4 h-4 text-slate-500" />
-                  <span className="font-medium">{selectedUser.Celular}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <MapPin className="w-4 h-4 text-slate-500" />
-                  <span className="font-medium truncate">{selectedUser.Localidad}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Calendar className="w-4 h-4 text-slate-500" />
-                  <span className="font-medium">Nac: {selectedUser.FechaNac}</span>
-                </div>
-              </div>
-
-              <button 
-                onClick={() => setSelectedUser(null)}
-                className="mt-auto w-full py-4 bg-white/5 hover:bg-white text-white hover:text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all duration-300"
-              >
-                Cerrar Expediente
-              </button>
             </div>
 
-            {/* Contenedor de Datos Dinámicos */}
-            <div className="flex-1 overflow-y-auto bg-slate-50/50 p-6 lg:p-12">
-              <div className="max-w-4xl mx-auto space-y-12">
-                
-                {Object.entries(getFieldGroups(selectedUser)).map(([category, fields]) => (
-                  fields.length > 0 && (
-                    <section key={category}>
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="h-px bg-slate-200 flex-1" />
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                          {category === 'Identidad' && <Info className="w-3.5 h-3.5" />}
-                          {category === 'Salud' && <HeartPulse className="w-3.5 h-3.5" />}
-                          {category === 'Domicilio' && <Home className="w-3.5 h-3.5" />}
-                          {category === 'Familiar' && <Users className="w-3.5 h-3.5" />}
-                          {category === 'Academico' && <GraduationCap className="w-3.5 h-3.5" />}
-                          {category === 'Otros' && <Activity className="w-3.5 h-3.5" />}
-                          {category}
-                        </h4>
-                        <div className="h-px bg-slate-200 flex-1" />
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {fields.map(([key, value]) => (
-                          <div key={key} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 hover:border-blue-200 transition-colors">
-                            <p className="text-[9px] font-bold text-slate-400 uppercase mb-1 leading-none truncate" title={key}>{key}</p>
-                            <p className="text-slate-900 font-bold text-sm tracking-tight">{String(value) || "-"}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  )
-                ))}
+            {/* Contenedor de Datos Dinámicos (TODO EL EXCEL) */}
+            <div className="flex-1 overflow-y-auto bg-[#f8fafc] p-8 lg:p-16">
+              <div className="max-w-5xl mx-auto">
+                <div className="flex items-center gap-4 mb-12">
+                  <h4 className="text-[12px] font-black text-blue-600 uppercase tracking-[0.3em]">Información Completa de Legajo</h4>
+                  <div className="h-px bg-blue-600/10 flex-1" />
+                </div>
 
-                <div className="p-8 bg-blue-600 rounded-[2rem] text-white shadow-xl shadow-blue-900/20 flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div className="text-center md:text-left">
-                    <h5 className="text-xs font-black uppercase tracking-widest opacity-60 mb-1">Cálculo de Edad Automático</h5>
-                    <p className="text-2xl font-black">Este cadete tiene {selectedUser.EdadActual} años cumplidos</p>
-                    <p className="text-[10px] font-medium opacity-80 mt-1">Sincronizado con la fecha oficial del sistema: Abril 2026</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Object.entries(isEditing ? editForm : currentUser)
+                    .filter(([key]) => !key.startsWith('_')) // Ocultar campos internos de la app
+                    .map(([key, value]) => (
+                    <div key={key} className="bg-white border border-slate-200 p-6 rounded-[2rem] shadow-sm hover:shadow-xl hover:border-blue-200 transition-all group">
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 group-hover:text-blue-500 transition-colors">
+                        {key}
+                      </label>
+                      {isEditing ? (
+                        <input 
+                          type="text"
+                          className="w-full bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                          value={value || ""}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, [key]: e.target.value }))}
+                        />
+                      ) : (
+                        <p className="text-slate-900 font-bold text-sm tracking-tight leading-tight break-words">
+                          {value || "-"}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Resumen de Edad Automático */}
+                <div className="mt-16 p-10 bg-blue-600 rounded-[3rem] text-white shadow-2xl shadow-blue-900/20 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32" />
+                  <div className="text-center md:text-left relative z-10">
+                    <h5 className="text-xs font-black uppercase tracking-[0.3em] opacity-60 mb-2">Estado de Sincronización</h5>
+                    <p className="text-3xl font-black">Este cadete tiene {currentUser._edad} años</p>
+                    <p className="text-xs font-medium opacity-80 mt-2 italic">Calculado automáticamente basándose en la fecha de nacimiento registrada.</p>
                   </div>
-                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
-                    <Calendar className="w-8 h-8" />
+                  <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center backdrop-blur-md border border-white/20 relative z-10">
+                    <Calendar size={40} className="text-white" />
                   </div>
                 </div>
               </div>
