@@ -107,7 +107,7 @@ const App = () => {
   const [editForm, setEditForm] = useState({});
   const [viewMode, setViewMode] = useState('grid');
 
-  // Procesar datos para la vista (DNI estandarizado y Edad)
+  // Procesar datos para la vista (DNI estandarizado, Edad y Orden Alfabético)
   const processedData = useMemo(() => {
     return cadetes.map(c => ({
       ...c,
@@ -118,6 +118,7 @@ const App = () => {
 
   const filteredData = useMemo(() => {
     return processedData.filter(user => {
+      // Búsqueda profunda en todos los valores de la fila
       const searchStr = Object.values(user).join(" ").toLowerCase();
       const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
       const matchesCourse = selectedCourse === "TODOS" || user.Año === selectedCourse;
@@ -223,9 +224,9 @@ const App = () => {
               <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><LayoutGrid size={18} /></button>
               <button onClick={() => setViewMode('table')} className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><List size={18} /></button>
             </div>
-            <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 flex flex-col items-center">
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Activos</span>
-              <span className="text-lg font-black text-slate-900">{filteredData.length}</span>
+            <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 flex flex-col items-center text-center">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Activos</span>
+              <span className="text-lg font-black text-slate-900 leading-none">{filteredData.length}</span>
             </div>
           </div>
         </header>
@@ -240,16 +241,16 @@ const App = () => {
                   onClick={() => setSelectedUserDNI(user._dni)}
                 >
                   <div className="flex justify-between items-start mb-6">
-                    <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                    <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all text-center">
                       <User size={24} />
                     </div>
                     <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black uppercase text-slate-500">{user.Año || "S/D"}</span>
                   </div>
                   
-                  <div className="mb-6 flex-1">
+                  <div className="mb-6 flex-1 text-left">
                     <h3 className="text-lg font-black text-slate-900 leading-tight uppercase mb-1">{user.Apellido}</h3>
                     <p className="text-sm font-semibold text-slate-500 mb-4">{user.Nombre}</p>
-                    <div className="grid grid-cols-2 gap-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div className="grid grid-cols-2 gap-2 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-left">
                       <div>
                         <p className="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">Documento</p>
                         <p className="text-xs font-bold text-slate-800 tracking-wider">{user._dni}</p>
@@ -261,7 +262,7 @@ const App = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-slate-400 pt-4 border-t border-slate-50">
+                  <div className="flex items-center gap-2 text-slate-400 pt-4 border-t border-slate-50 text-left">
                     <MapPin size={12} className="text-blue-500" />
                     <span className="text-[10px] font-bold uppercase truncate">{user.Localidad || "-"}</span>
                     <ChevronRight size={14} className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -289,7 +290,7 @@ const App = () => {
                     >
                       <td className="p-4"><span className="font-bold text-sm uppercase">{user.Apellido}, {user.Nombre}</span></td>
                       <td className="p-4"><span className="text-sm font-mono text-slate-600">{user._dni}</span></td>
-                      <td className="p-4"><span className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black rounded uppercase">{user.Año}</span></td>
+                      <td className="p-4 text-center"><span className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black rounded uppercase">{user.Año}</span></td>
                       <td className="p-4 text-xs font-semibold text-slate-500 uppercase">{user.Localidad}</td>
                     </tr>
                   ))}
@@ -308,7 +309,7 @@ const App = () => {
           <div className="relative bg-white w-full max-w-7xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row h-[90vh] animate-in zoom-in duration-300">
             
             {/* Cabecera / Perfil Lateral */}
-            <div className="bg-[#0f172a] w-full lg:w-96 p-10 text-white flex flex-col flex-shrink-0 relative overflow-hidden">
+            <div className="bg-[#0f172a] w-full lg:w-96 p-10 text-white flex flex-col flex-shrink-0 relative overflow-hidden text-center">
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-3xl rounded-full -mr-10 -mt-10" />
               
               <div className="text-center relative z-10">
@@ -355,7 +356,7 @@ const App = () => {
               </div>
             </div>
 
-            {/* Contenedor de Datos Dinámicos (TODO EL EXCEL) */}
+            {/* Contenedor de Datos Dinámicos (MUESTRA TODOS LOS CAMPOS) */}
             <div className="flex-1 overflow-y-auto bg-[#f8fafc] p-8 lg:p-16">
               <div className="max-w-5xl mx-auto">
                 <div className="flex items-center gap-4 mb-12">
@@ -367,7 +368,7 @@ const App = () => {
                   {Object.entries(isEditing ? editForm : currentUser)
                     .filter(([key]) => !key.startsWith('_')) // Ocultar campos internos de la app
                     .map(([key, value]) => (
-                    <div key={key} className="bg-white border border-slate-200 p-6 rounded-[2rem] shadow-sm hover:shadow-xl hover:border-blue-200 transition-all group">
+                    <div key={key} className="bg-white border border-slate-200 p-6 rounded-[2rem] shadow-sm hover:shadow-xl hover:border-blue-200 transition-all group text-left">
                       <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 group-hover:text-blue-500 transition-colors">
                         {key}
                       </label>
