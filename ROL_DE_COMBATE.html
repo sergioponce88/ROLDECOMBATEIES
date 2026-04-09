@@ -16,8 +16,9 @@
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        /* Animación suave para la tabla */
         tr { transition: all 0.2s ease-in-out; }
+        .scale-in { animation: scaleIn 0.2s ease-out; }
+        @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
@@ -29,14 +30,14 @@
         <header class="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div class="flex items-center gap-4">
                 <div class="bg-indigo-600 p-3 rounded-xl text-white shadow-lg shadow-indigo-200">
-                    <i data-lucide="users" class="w-8 h-8"></i>
+                    <i data-lucide="shield-check" class="w-8 h-8"></i>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Rol de Combate</h1>
+                    <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Sistema Rol de Combate</h1>
                     <div id="sync-status" class="flex items-center gap-2 text-sm text-slate-500">
                         <span class="flex items-center gap-1 text-slate-400 italic">
                             <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> 
-                            Iniciando conexión...
+                            Conectando con Google Sheets...
                         </span>
                     </div>
                 </div>
@@ -47,18 +48,28 @@
                     <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
                     Sincronizar
                 </button>
-                <label class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-4 py-2.5 rounded-xl cursor-pointer transition font-medium border border-indigo-100 active:scale-95">
+                <button onclick="openHelpModal()" class="p-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl transition shadow-sm" title="Ayuda Configuración">
+                    <i data-lucide="help-circle" class="w-5 h-5"></i>
+                </button>
+                
+                <!-- BOTÓN RESTAURADO PARA CARGA LOCAL -->
+                <label class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-4 py-2.5 rounded-xl cursor-pointer transition font-medium border border-indigo-100 active:scale-95 shadow-sm">
                     <i data-lucide="upload" class="w-4 h-4"></i>
                     Cargar Local
                     <input type="file" id="csv-upload" class="hidden" accept=".csv">
                 </label>
+
                 <button onclick="openAddModal()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl transition shadow-md font-medium active:scale-95">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    Nuevo Ingreso
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    Nuevo Cadete
+                </button>
+                <button onclick="openReportModal()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl transition shadow-md font-medium active:scale-95">
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                    Informe Faltantes
                 </button>
                 <button onclick="exportToCSV()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl transition shadow-md font-medium active:scale-95">
                     <i data-lucide="download" class="w-4 h-4"></i>
-                    Reporte CSV
+                    Exportar
                 </button>
             </div>
         </header>
@@ -66,16 +77,16 @@
         <!-- DASHBOARD STATS -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <p class="text-xs font-bold text-slate-400 uppercase mb-1">Total Cadetes</p>
+                <p class="text-xs font-bold text-slate-400 uppercase mb-1">Total General</p>
                 <p id="stat-total" class="text-3xl font-black text-slate-900">0</p>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-xs font-bold text-blue-400 uppercase mb-1">1er Año</p>
+                <p id="stat-1er" class="text-3xl font-black text-blue-600">0</p>
             </div>
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                 <p class="text-xs font-bold text-indigo-400 uppercase mb-1">2do Año</p>
                 <p id="stat-2do" class="text-3xl font-black text-indigo-600">0</p>
-            </div>
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <p class="text-xs font-bold text-purple-400 uppercase mb-1">3er Año</p>
-                <p id="stat-3er" class="text-3xl font-black text-purple-600">0</p>
             </div>
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                 <p class="text-xs font-bold text-amber-500 uppercase mb-1">Incompletos</p>
@@ -90,7 +101,7 @@
                 <input 
                     type="text" 
                     id="search-input"
-                    placeholder="Buscar por Apellido, Nombre, DNI..." 
+                    placeholder="Buscar por Apellido, Nombre, DNI, Localidad..." 
                     class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm transition"
                 >
             </div>
@@ -110,8 +121,8 @@
                     id="toggle-incomplete"
                     class="w-full h-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition font-medium shadow-sm"
                 >
-                    <i data-lucide="filter" class="w-5 h-5"></i>
-                    Ver Incompletos
+                    <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                    Solo Faltantes
                 </button>
             </div>
         </div>
@@ -126,7 +137,7 @@
                             <th class="p-5">DNI / CUIL</th>
                             <th class="p-5 text-center">Curso</th>
                             <th class="p-5">Localidad</th>
-                            <th class="p-5">Estado Datos</th>
+                            <th class="p-5">Ficha Personal</th>
                             <th class="p-5 text-right">Acciones</th>
                         </tr>
                     </thead>
@@ -137,7 +148,7 @@
             </div>
             <!-- Paginación -->
             <div class="p-5 border-t border-slate-100 bg-white flex justify-between items-center">
-                <span id="pagination-info" class="text-xs font-medium text-slate-500 italic">Cargando datos...</span>
+                <span id="pagination-info" class="text-xs font-medium text-slate-500 italic">Cargando base de datos...</span>
                 <div class="flex gap-2">
                     <button onclick="prevPage()" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition active:scale-95"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
                     <button onclick="nextPage()" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition active:scale-95"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
@@ -148,27 +159,71 @@
 
     <!-- MODAL EDITAR -->
     <div id="modal-edit" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col scale-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col scale-in">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <div>
-                    <h2 class="text-xl font-bold text-slate-900">Ficha del Cadete</h2>
-                    <p class="text-xs text-slate-400">Actualiza la información personal</p>
+                    <h2 class="text-xl font-bold text-slate-900">Ficha Técnica del Cadete</h2>
+                    <p class="text-xs text-slate-400">Modifica los datos personales y de contacto</p>
                 </div>
                 <button onclick="closeModals()" class="p-2 hover:bg-slate-200 rounded-full transition"><i data-lucide="x" class="w-6 h-6 text-slate-400"></i></button>
             </div>
             <form id="form-edit" class="p-6 overflow-y-auto flex-1 custom-scrollbar">
-                <div id="edit-fields-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div id="edit-fields-container" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <!-- Campos generados dinámicamente -->
                 </div>
                 <div class="flex justify-end gap-3 mt-8 pt-6 border-t bg-white sticky bottom-0">
                     <button type="button" onclick="closeModals()" class="px-6 py-2.5 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl transition">Cancelar</button>
-                    <button type="submit" class="px-8 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition">Guardar Cambios</button>
+                    <button type="submit" class="px-8 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition">Actualizar Registro</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL NUEVO -->
+    <!-- MODAL INFORME -->
+    <div id="modal-report" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col scale-in">
+            <div class="p-6 border-b border-amber-100 flex justify-between items-center bg-amber-50">
+                <div>
+                    <h2 class="text-xl font-bold text-amber-900">Auditoría de Datos Faltantes</h2>
+                    <p class="text-xs text-amber-700">Listado de cadetes con información crítica pendiente</p>
+                </div>
+                <button onclick="closeModals()" class="p-2 hover:bg-amber-100 rounded-full transition"><i data-lucide="x" class="w-6 h-6 text-amber-800"></i></button>
+            </div>
+            <div id="report-container" class="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4">
+                <!-- Reporte generado aquí -->
+            </div>
+            <div class="p-4 border-t bg-slate-50 flex justify-end">
+                <button onclick="window.print()" class="px-6 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold flex items-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Reporte
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL AYUDA -->
+    <div id="modal-help" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden scale-in">
+            <div class="p-6 border-b bg-indigo-50">
+                <h2 class="text-xl font-bold text-indigo-900">Cómo conectar Google Sheets</h2>
+            </div>
+            <div class="p-6 space-y-4 text-sm leading-relaxed">
+                <p>1. En tu planilla, ve a <strong>Archivo > Compartir > Publicar en la web</strong>.</p>
+                <p>2. Selecciona la hoja específica (ej: "2° AÑO").</p>
+                <p>3. Cambia "Página web" por <strong>Valores separados por comas (.csv)</strong>.</p>
+                <p>4. Haz clic en <strong>Publicar</strong> y copia el link.</p>
+                <p>5. Pégalo en el código del archivo <code>index.html</code> (Sección SHEET_URLS).</p>
+                <div class="bg-amber-50 p-3 rounded-lg border border-amber-100 text-amber-800 flex gap-3">
+                    <i data-lucide="info" class="w-5 h-5 shrink-0"></i>
+                    <p class="text-xs">Asegúrate de publicar cada hoja por separado para tener los links de 1°, 2° y 3° año.</p>
+                </div>
+            </div>
+            <div class="p-4 border-t bg-slate-50 flex justify-end">
+                <button onclick="closeModals()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NUEVO (Sección agregada para completar el flujo) -->
     <div id="modal-add" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
             <div class="p-6 border-b border-emerald-100 flex justify-between items-center bg-emerald-50/50">
@@ -176,28 +231,14 @@
                 <button onclick="closeModals()" class="p-2 hover:bg-emerald-100 rounded-full transition"><i data-lucide="x" class="w-6 h-6 text-emerald-800"></i></button>
             </div>
             <form id="form-add" class="p-8 space-y-4">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Apellido</label>
-                    <input type="text" name="Apellido" placeholder="Ej: Perez" required class="w-full border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nombre</label>
-                    <input type="text" name="Nombre" placeholder="Ej: Juan" required class="w-full border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">DNI</label>
-                        <input type="text" name="DNI" placeholder="Sin puntos" required class="w-full border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Curso</label>
-                        <select name="Año" class="w-full border border-slate-200 p-3 rounded-xl outline-none bg-slate-50 appearance-none">
-                            <option value="1er Año">1er Año</option>
-                            <option value="2do Año">2do Año</option>
-                            <option value="3er Año">3er Año</option>
-                        </select>
-                    </div>
-                </div>
+                <input type="text" name="Apellido" placeholder="Apellido" required class="w-full border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+                <input type="text" name="Nombre" placeholder="Nombre" required class="w-full border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+                <input type="text" name="DNI" placeholder="DNI" required class="w-full border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+                <select name="Año" class="w-full border border-slate-200 p-3 rounded-xl outline-none bg-slate-50 appearance-none">
+                    <option value="1er Año">1er Año</option>
+                    <option value="2do Año">2do Año</option>
+                    <option value="3er Año">3er Año</option>
+                </select>
                 <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
                     <button type="button" onclick="closeModals()" class="px-6 py-3 text-slate-500 font-semibold hover:bg-slate-100 rounded-xl transition">Descartar</button>
                     <button type="submit" class="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition">Registrar</button>
@@ -207,15 +248,13 @@
     </div>
 
     <script>
-        // --- CONFIGURACIÓN: ENLACES DE GOOGLE SHEETS ---
-        // Pega aquí los enlaces que obtengas de Google Sheets (Publicar en la web -> CSV)
+        // --- CONFIGURACIÓN DE LINKS ---
         const SHEET_URLS = {
             '1er Año': '', 
             '2do Año': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTfvg2ERSB37qlvKd6DEhVNKNvP81J2_YrWncIfifrRcl5VdKnprhxOhJqqGfxLXg/pub?output=csv', 
             '3er Año': ''  
         };
 
-        // Estado Global
         let students = [];
         let searchTerm = '';
         let filterYear = 'Todos';
@@ -224,12 +263,10 @@
         const itemsPerPage = 12;
         let editingId = null;
 
-        // Campos considerados críticos para el reporte de datos faltantes
-        const criticalFields = ['Apellido', 'Nombre', 'DNI', 'CUIL', 'Celular', 'LOCALIDAD3', 'CORREO ELECTRONICO', 'Domicilio'];
+        const criticalFields = ['Apellido', 'Nombre', 'DNI', 'CUIL', 'Celular', 'LOCALIDAD3', 'CORREO ELECTRONICO', 'Domicilio', 'Comisaria'];
 
         function initIcons() { lucide.createIcons(); }
 
-        // Sincronizar con Google Sheets
         async function fetchFromSheets() {
             const btn = document.getElementById('refresh-icon');
             const statusEl = document.getElementById('sync-status');
@@ -241,9 +278,8 @@
             try {
                 for (const [year, url] of Object.entries(SHEET_URLS)) {
                     if (!url || !url.startsWith('http')) continue;
-                    
                     const response = await fetch(url);
-                    if (!response.ok) throw new Error("Error en respuesta de red");
+                    if (!response.ok) throw new Error("Error de conexión");
                     const text = await response.text();
                     const parsed = parseCSV(text, year);
                     allData = [...allData, ...parsed];
@@ -253,32 +289,26 @@
                 if (loadedAny) {
                     students = allData;
                     statusEl.innerHTML = `
-                        <span class="flex items-center gap-1 text-emerald-600 font-medium animate-pulse">
+                        <span class="flex items-center gap-1 text-emerald-600 font-semibold">
                             <i data-lucide="check-circle" class="w-3 h-3"></i> 
-                            Última sincronización: ${new Date().toLocaleTimeString()}
+                            Datos actualizados: ${new Date().toLocaleTimeString()}
                         </span>`;
                 } else {
-                    statusEl.innerHTML = `
-                        <span class="flex items-center gap-1 text-amber-500 font-medium">
-                            <i data-lucide="alert-triangle" class="w-3 h-3"></i> 
-                            Sin enlaces configurados
-                        </span>`;
+                    statusEl.innerHTML = `<span class="text-amber-500 font-medium text-xs">Configura los links para empezar</span>`;
                 }
                 render();
             } catch (e) {
-                console.error("Error al cargar Sheets:", e);
-                statusEl.innerHTML = `<span class="text-rose-500 font-medium italic">Error al conectar con la Nube</span>`;
+                console.error(e);
+                statusEl.innerHTML = `<span class="text-rose-500 font-medium italic">Fallo al conectar con Google Sheets</span>`;
             } finally {
                 if (btn) btn.classList.remove('animate-spin');
                 initIcons();
             }
         }
 
-        // Parser robusto para CSV
         function parseCSV(text, yearLabel) {
             const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
             if (lines.length < 2) return [];
-            
             const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
             
             return lines.slice(1).map(line => {
@@ -294,7 +324,7 @@
         function getCompleteness(student) {
             const completed = criticalFields.filter(f => {
                 const val = student[f];
-                return val && String(val).trim() !== '' && val !== '-';
+                return val && String(val).trim() !== '' && val !== '-' && val !== '0';
             }).length;
             return (completed / criticalFields.length) * 100;
         }
@@ -308,28 +338,25 @@
                 return matchesSearch && matchesYear && isMissing;
             });
 
-            // Actualizar Estadísticas
             document.getElementById('stat-total').innerText = students.length;
+            document.getElementById('stat-1er').innerText = students.filter(s => s['Año']?.includes('1')).length;
             document.getElementById('stat-2do').innerText = students.filter(s => s['Año']?.includes('2')).length;
-            document.getElementById('stat-3er').innerText = students.filter(s => s['Año']?.includes('3')).length;
             document.getElementById('stat-incomplete').innerText = students.filter(s => getCompleteness(s) < 100).length;
 
-            // Renderizar Tabla
             const start = (currentPage - 1) * itemsPerPage;
-            const end = start + itemsPerPage;
-            const pageData = filtered.slice(start, end);
+            const pageData = filtered.slice(start, start + itemsPerPage);
             const tbody = document.getElementById('table-body');
             
             tbody.innerHTML = pageData.map(s => {
                 const comp = getCompleteness(s);
                 const colorClass = comp === 100 ? 'bg-emerald-500' : comp > 60 ? 'bg-amber-400' : 'bg-rose-500';
-                const yearClass = s['Año']?.includes('1') ? 'bg-sky-100 text-sky-700' : s['Año']?.includes('2') ? 'bg-indigo-100 text-indigo-700' : 'bg-violet-100 text-violet-700';
+                const yearClass = s['Año']?.includes('1') ? 'bg-blue-100 text-blue-700' : s['Año']?.includes('2') ? 'bg-indigo-100 text-indigo-700' : 'bg-violet-100 text-violet-700';
 
                 return `
-                    <tr class="hover:bg-indigo-50/40 group">
+                    <tr class="hover:bg-slate-50 group">
                         <td class="p-5">
                             <div class="font-bold text-slate-900">${s.Apellido || 'S/A'}, ${s.Nombre || 'S/N'}</div>
-                            <div class="text-[11px] text-slate-400 mt-0.5">${s.Celular || 'Sin teléfono'}</div>
+                            <div class="text-[11px] text-slate-400 mt-0.5">${s.Celular || 'Sin contacto'}</div>
                         </td>
                         <td class="p-5">
                             <div class="text-xs font-semibold text-slate-700">${s.DNI || 'S/D'}</div>
@@ -337,16 +364,15 @@
                         </td>
                         <td class="p-5 text-center">
                             <span class="inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase ${yearClass}">
-                                ${s['Año'] || 'N/A'}
+                                ${s['Año'] || '---'}
                             </span>
                         </td>
                         <td class="p-5">
-                            <div class="text-xs text-slate-600 truncate max-w-[120px]">${s.LOCALIDAD3 || s.Localidad || '-'}</div>
-                            <div class="text-[10px] text-slate-400 truncate max-w-[120px]">${s.Domicilio || ''}</div>
+                            <div class="text-xs text-slate-600 truncate max-w-[150px]">${s.LOCALIDAD3 || s.Localidad || '-'}</div>
                         </td>
                         <td class="p-5 min-w-[140px]">
                             <div class="flex items-center gap-2">
-                                <div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-50">
+                                <div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
                                     <div class="h-full transition-all duration-700 rounded-full ${colorClass}" style="width: ${comp}%"></div>
                                 </div>
                                 <span class="text-[10px] font-bold text-slate-500 w-8 text-right">${Math.round(comp)}%</span>
@@ -354,7 +380,7 @@
                         </td>
                         <td class="p-5 text-right">
                             <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="openEditModal('${s.id}')" class="p-2 text-indigo-500 hover:bg-indigo-100 rounded-lg transition"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                <button onclick="openEditModal('${s.id}')" class="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition"><i data-lucide="edit" class="w-4 h-4"></i></button>
                                 <button onclick="deleteStudent('${s.id}')" class="p-2 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
                         </td>
@@ -362,21 +388,33 @@
                 `;
             }).join('');
 
-            if (pageData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-24 text-center text-slate-400 italic font-medium"><i data-lucide="info" class="w-10 h-10 mx-auto mb-2 opacity-20"></i>No se encontraron resultados</td></tr>`;
-            }
-
-            document.getElementById('pagination-info').innerText = filtered.length > 0 ? `Mostrando ${pageData.length} de ${filtered.length} resultados` : 'Sin datos';
+            document.getElementById('pagination-info').innerText = `Mostrando ${pageData.length} de ${filtered.length} resultados`;
             initIcons();
         }
 
-        // --- MANEJO DE MODALES Y FORMULARIOS ---
-
-        function deleteStudent(id) {
-            if (confirm("¿Estás seguro de eliminar este registro? No se sincronizará automáticamente con Google Sheets.")) {
-                students = students.filter(s => s.id !== id);
-                render();
+        function openReportModal() {
+            const container = document.getElementById('report-container');
+            const incomplete = students.filter(s => getCompleteness(s) < 100);
+            if (incomplete.length === 0) {
+                container.innerHTML = `<div class="p-10 text-center text-emerald-600 font-bold">¡Todos los registros están completos!</div>`;
+            } else {
+                container.innerHTML = incomplete.map(s => {
+                    const missing = criticalFields.filter(f => !s[f] || String(s[f]).trim() === '' || s[f] === '-' || s[f] === '0');
+                    return `
+                        <div class="p-4 border border-amber-200 bg-amber-50/30 rounded-xl">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-slate-900">${s.Apellido}, ${s.Nombre} (${s['Año']})</h3>
+                                <span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold">Faltan ${missing.length} datos</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                ${missing.map(m => `<span class="text-[9px] bg-white border border-amber-200 px-2 py-1 rounded-md text-slate-600 font-medium italic">${m}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             }
+            document.getElementById('modal-report').classList.add('active');
+            initIcons();
         }
 
         function openEditModal(id) {
@@ -384,53 +422,31 @@
             if (!s) return;
             editingId = id;
             const container = document.getElementById('edit-fields-container');
-            
-            // Priorizar campos críticos al principio del formulario
             const allKeys = Object.keys(s).filter(k => k !== 'id');
             const sortedKeys = [...criticalFields.filter(f => allKeys.includes(f)), ...allKeys.filter(f => !criticalFields.includes(f))];
-
             container.innerHTML = sortedKeys.map(key => `
                 <div class="group">
-                    <label class="block text-[10px] font-bold uppercase mb-1 ${criticalFields.includes(key) ? 'text-indigo-600' : 'text-slate-400'} group-focus-within:text-indigo-500">
-                        ${key} ${criticalFields.includes(key) ? '<i class="inline-block w-1 h-1 bg-indigo-400 rounded-full mb-1 ml-0.5"></i>' : ''}
+                    <label class="block text-[10px] font-bold uppercase mb-1 ${criticalFields.includes(key) ? 'text-indigo-600' : 'text-slate-400'}">
+                        ${key} ${criticalFields.includes(key) ? '<span class="text-indigo-400">*</span>' : ''}
                     </label>
-                    <input type="text" name="${key}" value="${s[key]}" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition shadow-sm">
+                    <input type="text" name="${key}" value="${s[key]}" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
                 </div>
             `).join('');
-            
             document.getElementById('modal-edit').classList.add('active');
             initIcons();
         }
 
-        function openAddModal() {
-            document.getElementById('modal-add').classList.add('active');
-        }
+        function deleteStudent(id) { if (confirm("¿Eliminar registro localmente?")) { students = students.filter(s => s.id !== id); render(); } }
+        function openAddModal() { document.getElementById('modal-add').classList.add('active'); initIcons(); }
+        function openHelpModal() { document.getElementById('modal-help').classList.add('active'); initIcons(); }
+        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); editingId = null; }
 
-        function closeModals() {
-            document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
-            editingId = null;
-        }
-
-        // --- EVENTOS ---
-
-        document.getElementById('search-input').addEventListener('input', (e) => {
-            searchTerm = e.target.value;
-            currentPage = 1;
-            render();
-        });
-
-        document.getElementById('filter-year').addEventListener('change', (e) => {
-            filterYear = e.target.value;
-            currentPage = 1;
-            render();
-        });
-
+        document.getElementById('search-input').addEventListener('input', (e) => { searchTerm = e.target.value; currentPage = 1; render(); });
+        document.getElementById('filter-year').addEventListener('change', (e) => { filterYear = e.target.value; currentPage = 1; render(); });
         document.getElementById('toggle-incomplete').addEventListener('click', () => {
             showIncompleteOnly = !showIncompleteOnly;
-            const btn = document.getElementById('toggle-incomplete');
-            btn.classList.toggle('bg-amber-50');
-            btn.classList.toggle('border-amber-300');
-            btn.classList.toggle('text-amber-700');
+            document.getElementById('toggle-incomplete').classList.toggle('bg-amber-100');
+            document.getElementById('toggle-incomplete').classList.toggle('border-amber-300');
             render();
         });
 
@@ -455,18 +471,21 @@
             render();
         });
 
-        document.getElementById('csv-upload').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const localData = parseCSV(ev.target.result);
-                students = [...localData, ...students];
-                alert("Cargados " + localData.length + " registros locales.");
-                render();
-            };
-            reader.readAsText(file);
-        });
+        // Este es el bloque que causaba el error si el elemento no existía en el HTML
+        const csvUpload = document.getElementById('csv-upload');
+        if (csvUpload) {
+            csvUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const localData = parseCSV(ev.target.result);
+                    students = [...localData, ...students];
+                    render();
+                };
+                reader.readAsText(file);
+            });
+        }
 
         function exportToCSV() {
             if (students.length === 0) return;
@@ -475,17 +494,14 @@
             const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `ROL_COMBATE_ACTUALIZADO_${new Date().toISOString().split('T')[0]}.csv`;
+            link.download = `ROL_AUDITADO_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
         }
 
         function nextPage() { if (currentPage * itemsPerPage < students.length) { currentPage++; render(); } }
         function prevPage() { if (currentPage > 1) { currentPage--; render(); } }
 
-        window.onload = () => {
-            initIcons();
-            fetchFromSheets();
-        };
+        window.onload = () => { initIcons(); fetchFromSheets(); };
     </script>
 </body>
 </html>
