@@ -31,7 +31,7 @@
                 } else {
                     await signInAnonymously(auth);
                 }
-                console.log("Sistema Autenticado Correctamente");
+                console.log("Sistema Autenticado");
                 window.fetchFromSheets();
             } catch (error) {
                 console.error("Error de autenticación:", error);
@@ -42,10 +42,9 @@
         window.saveStudentToCloud = async (id, data) => {
             if (!auth.currentUser) return;
             try {
-                // Usamos DNI como clave si existe, sino el ID interno
                 const cloudKey = data.DNI || id;
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'modificaciones', cloudKey), data);
-                console.log("Cambios guardados en la nube para:", cloudKey);
+                console.log("Cambios guardados en la nube");
             } catch (err) {
                 console.error("Error guardando cambios:", err);
             }
@@ -57,7 +56,7 @@
                 const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'modificaciones'));
                 snapshot.forEach(doc => { mods[doc.id] = doc.data(); });
             } catch (err) {
-                console.error("Error recuperando cambios de la nube:", err);
+                console.error("Error recuperando cambios:", err);
             }
             return mods;
         };
@@ -97,11 +96,11 @@
                     <i data-lucide="shield-check" class="w-8 h-8"></i>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-black text-slate-900 tracking-tight uppercase">Rol de Combate</h1>
+                    <h1 class="text-2xl font-black text-slate-900 tracking-tight uppercase italic">Rol de Combate</h1>
                     <div id="sync-status" class="flex items-center gap-2 text-sm text-slate-500">
                         <span class="flex items-center gap-1 text-slate-400 italic text-xs">
                             <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> 
-                            Cargando base de datos unificada...
+                            Sincronizando expedientes...
                         </span>
                     </div>
                 </div>
@@ -110,11 +109,11 @@
             <div class="flex flex-wrap gap-2 w-full lg:w-auto">
                 <button onclick="fetchFromSheets()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 px-4 py-2.5 rounded-xl transition font-medium shadow-sm active:scale-95 text-slate-700">
                     <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
-                    Recargar Nube
+                    Recargar
                 </button>
                 <button onclick="openCustomListModal()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-4 py-2.5 rounded-xl transition font-semibold border border-indigo-100 shadow-sm active:scale-95">
                     <i data-lucide="layout-list" class="w-4 h-4"></i>
-                    Generar Listado
+                    Listado Columnas
                 </button>
                 <button onclick="openAddModal()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl transition shadow-md font-bold active:scale-95">
                     <i data-lucide="plus" class="w-4 h-4"></i>
@@ -146,7 +145,7 @@
                 <p id="stat-3er" class="text-3xl font-black text-violet-600 tracking-tighter">0</p>
             </div>
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-amber-500 text-amber-600">
-                <p class="text-[10px] font-bold text-amber-500 uppercase mb-1 tracking-wider">Incompletos</p>
+                <p class="text-[10px] font-bold text-amber-500 uppercase mb-1 tracking-wider">Datos Faltantes</p>
                 <p id="stat-incomplete" class="text-3xl font-black tracking-tighter">0</p>
             </div>
         </div>
@@ -166,7 +165,7 @@
                 </select>
             </div>
             <div class="lg:col-span-3">
-                <button id="toggle-incomplete" class="w-full h-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition font-medium shadow-sm active:scale-95">
+                <button id="toggle-incomplete" class="w-full h-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition font-medium shadow-sm active:scale-95 uppercase text-[10px] font-black tracking-widest">
                     <i data-lucide="alert-circle" class="w-5 h-5 text-amber-500"></i>
                     Filtrar Incompletos
                 </button>
@@ -181,18 +180,18 @@
                         <tr class="bg-slate-50/80 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b">
                             <th class="p-5">Cadete / Identificación</th>
                             <th class="p-5 text-center">Curso / UR</th>
-                            <th class="p-5">Salud / Sangre</th>
-                            <th class="p-5">Estado Datos</th>
+                            <th class="p-5 text-center">Salud / Sangre</th>
+                            <th class="p-5">Estado Expediente</th>
                             <th class="p-5 text-right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y divide-slate-100 text-sm">
-                        <!-- Loaded by JS -->
+                        <!-- Filled by JS -->
                     </tbody>
                 </table>
             </div>
             <div class="p-5 border-t border-slate-100 bg-white flex justify-between items-center">
-                <span id="pagination-info" class="text-xs font-semibold text-slate-500 italic uppercase">Orden Alfabético A-Z</span>
+                <span id="pagination-info" class="text-xs font-semibold text-slate-500 italic uppercase">Cargando datos normalizados...</span>
                 <div class="flex gap-2">
                     <button onclick="prevPage()" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition active:scale-95"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
                     <button onclick="nextPage()" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition active:scale-95"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
@@ -208,7 +207,7 @@
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <div>
                     <h2 class="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight"><i data-lucide="user-edit" class="text-indigo-600"></i> Expediente Digital</h2>
-                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">Los cambios se guardan permanentemente en la nube</p>
+                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">Sincronización Cloud Activada</p>
                 </div>
                 <button onclick="closeModals()" class="p-2 hover:bg-slate-200 rounded-full transition text-slate-400"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
@@ -225,9 +224,9 @@
     <div id="modal-print-individual" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col scale-in border-2 border-slate-200">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-800 text-white no-print">
-                <h2 class="text-xl font-bold uppercase tracking-widest text-sm">Previsualización de Ficha Técnica</h2>
+                <h2 class="text-sm font-bold uppercase tracking-widest">Ficha Profesional para Legajo</h2>
                 <div class="flex gap-2">
-                    <button onclick="window.print()" class="px-5 py-2 bg-emerald-500 text-white rounded-lg font-black flex items-center gap-2 shadow-lg hover:bg-emerald-600 transition"><i data-lucide="printer" class="w-4 h-4"></i> IMPRIMIR</button>
+                    <button onclick="window.print()" class="px-6 py-2 bg-emerald-500 text-white rounded-xl font-black flex items-center gap-2 shadow-lg hover:bg-emerald-600 transition"><i data-lucide="printer" class="w-4 h-4"></i> IMPRIMIR</button>
                     <button onclick="closeModals()" class="p-2 hover:bg-slate-700 rounded-full text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
                 </div>
             </div>
@@ -238,23 +237,23 @@
     <div id="modal-custom-list" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print text-left">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col scale-in">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-900 text-white uppercase font-black tracking-widest">
-                <h2 class="text-lg">Generador de Informes por Columnas</h2>
+                <h2 class="text-lg">Generador de Listados</h2>
                 <button onclick="closeModals()" class="p-2 hover:bg-indigo-800 rounded-full text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <div class="p-6 overflow-y-auto flex-1 custom-scrollbar text-center">
                 <div id="column-selector" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 bg-slate-50 p-4 rounded-xl border mb-6 text-left"></div>
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-black text-lg text-slate-900">Vista Previa</h3>
-                    <button onclick="printCustomList()" class="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition"><i data-lucide="printer" class="w-4 h-4 inline mr-2"></i> Generar Reporte</button>
+                    <h3 class="font-black text-lg text-slate-900 tracking-tight">Vista Previa</h3>
+                    <button onclick="printCustomList()" class="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition"><i data-lucide="printer" class="w-4 h-4 inline mr-2"></i> Generar Reporte A4</button>
                 </div>
-                <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white" id="custom-list-preview"></div>
+                <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-inner" id="custom-list-preview"></div>
             </div>
         </div>
     </div>
 
     <div id="modal-add" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print text-left">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden scale-in">
-            <div class="p-6 border-b bg-emerald-600 text-white uppercase font-black tracking-widest"><h2 class="text-lg">Alta de Nuevo Cadete</h2></div>
+            <div class="p-6 border-b bg-emerald-600 text-white uppercase font-black tracking-widest"><h2 class="text-lg flex items-center gap-2"><i data-lucide="plus"></i> Alta de Cadete</h2></div>
             <form id="form-add" class="p-8 space-y-4">
                 <input type="text" name="Apellido" required placeholder="Apellido" class="w-full border p-4 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 uppercase font-bold text-sm">
                 <input type="text" name="Nombre" required placeholder="Nombre" class="w-full border p-4 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 uppercase font-bold text-sm">
@@ -267,14 +266,15 @@
 
     <!-- LÓGICA PRINCIPAL -->
     <script>
-        // CONFIGURACIÓN DE CATEGORÍAS (CON NORMALIZACIÓN DE TÍTULOS)
+        // CONFIGURACIÓN DE CATEGORÍAS (NORMALIZACIÓN DE TÍTULOS PARA EVITAR DESPLAZAMIENTOS)
         const DATA_SECTIONS = [
             { name: 'Identificación y Legajo', fields: ['Apellido', 'Nombre', 'DNI', 'CUIL', 'Legajo', 'Prontuario', 'Año', 'Sexo', 'Fecha Nac', 'Edad', 'Est. Civil', 'UR', 'RELIGIÓN'], color: 'indigo' },
-            { name: 'Jurisdicción y Domicilio', fields: ['Domicilio', 'Localidad', 'Departamento', 'Comisaria', 'DOMICILIO REAL (Lugar donde vive)', 'LOCALIDAD3', 'COMISARIA JURISDICCIONAL (Comisaría a la que corresponde según donde vive)'], color: 'cyan' },
-            { name: 'Salud y Biotipo', fields: ['Grupo Sangre', 'Grupo Sanguineo', 'Estatura', 'Peso', 'IMC', 'Estado IMC', 'Enfermedades', 'Traumas', 'Relato Lesion', 'Ant Familiares'], color: 'rose' },
-            { name: 'Datos de los Padres', fields: ['APELLIDO Y NOMBRE DE PADRE (Contestar solo si posee)', 'N° DNI DE PADRE (Contestar solo si posee)', 'VIVE SU PADRE (Contestar solo si posee)', 'PROFESION DE PADRE (Contestar solo si posee)', 'APELLIDO Y NOMBRE DE MADRE (Contestar solo si posee)', 'N° DNI DE MADRE (Contestar solo si posee)', 'VIVE SU MADRE (Contestar solo si posee)', 'PROFESION DE MADRE (Contestar solo si posee)'], color: 'slate' },
-            { name: 'Contacto y Redes', fields: ['Celular', 'CORREO ELECTRONICO', 'Instagram', 'Facebook', 'Tik Tok'], color: 'blue' },
-            { name: 'Vivienda y Entorno', fields: ['Hermanos', 'ALQUILA', 'VIVE EN DOMICILIO DE UN FAMILIAR?', 'DOMICILIO DE UN FAMILIAR ( Contestar solo si vive en un domicilio de algún familiar)'], color: 'orange' },
+            { name: 'Domicilio y Jurisdicción', fields: ['Domicilio', 'Localidad', 'Departamento', 'Comisaria', 'DOMICILIO REAL (Lugar donde vive)', 'LOCALIDAD3', 'COMISARIA JURISDICCIONAL (Comisaría a la que corresponde según donde vive)'], color: 'cyan' },
+            { name: 'Salud y Grupo Sanguíneo', fields: ['Grupo Sangre', 'Grupo Sanguineo', 'Estatura', 'Peso', 'IMC', 'Estado IMC', 'Enfermedades', 'Traumas', 'Relato Lesion', 'Ant Familiares'], color: 'rose' },
+            { name: 'Datos del Padre', fields: ['APELLIDO Y NOMBRE DE PADRE (Contestar solo si posee)', 'N° DNI DE PADRE (Contestar solo si posee)', 'VIVE SU PADRE (Contestar solo si posee)', 'PROFESION DE PADRE (Contestar solo si posee)', 'FECHA DE NACIMIENTO DE PADRE (Contestar solo si posee)', 'NACIONALIDAD DE PADRE (Contestar solo si posee)', 'DOMICILIO DE PADRE (Contestar solo si posee)'], color: 'slate' },
+            { name: 'Datos de la Madre', fields: ['APELLIDO Y NOMBRE DE MADRE (Contestar solo si posee)', 'N° DNI DE MADRE (Contestar solo si posee)', 'VIVE SU MADRE (Contestar solo si posee)', 'PROFESION DE MADRE (Contestar solo si posee)', 'FECHA DE NACIMIENTO DE MADRE (Contestar solo si posee)', 'NACIONALIDAD DE MADRE (Contestar solo si posee)', 'DOMICILIO DE MADRE (Contestar solo si posee)'], color: 'rose' },
+            { name: 'Entorno de Vivienda', fields: ['Hermanos', 'ALQUILA', 'VIVE EN DOMICILIO DE UN FAMILIAR?', 'DOMICILIO DE UN FAMILIAR ( Contestar solo si vive en un domicilio de algún familiar)', 'COMISARIA JURISDICCIONAL DONDE VIVE ALGUN FAMILIAR ( Contestar solo si vive en un domicilio de algún familiar)'], color: 'orange' },
+            { name: 'Contacto y Redes', fields: ['Celular', 'N° TELÉFONO (Uso Personal)', 'CORREO ELECTRONICO', 'Instagram', 'Facebook', 'Tik Tok'], color: 'blue' },
             { name: 'Servicio y Armamento', fields: ['Jerarquia', 'Arma Marca', 'Arma Serie', 'Act Fisica', 'Tabaco', 'Alcohol'], color: 'emerald' }
         ];
 
@@ -286,7 +286,7 @@
         const itemsPerPage = 12;
         let allHeaders = [];
 
-        // --- MOTOR DE NORMALIZACIÓN MEJORADO ---
+        // Motor de normalización inteligente
         function smartNorm(str) {
             if (!str) return '';
             return str.trim()
@@ -297,11 +297,10 @@
                 .replace(/[.?]/g, '');
         }
 
-        // Limpiador de valores de Excel
+        // Limpieza de datos (fechas, ceros, etc)
         function formatVal(val) {
             if (val === undefined || val === null || val === '') return '---';
             let s = String(val).trim();
-            // Detectar formato AAAA-MM-DD 00:00:00 común en Sheets/Excel
             if (s.match(/^\d{4}-\d{2}-\d{2}/)) {
                 let parts = s.split(' ')[0].split('-');
                 return `${parts[2]}/${parts[1]}/${parts[0]}`;
@@ -310,7 +309,7 @@
             return s.toUpperCase();
         }
 
-        // Obtiene el valor real buscando por el nombre normalizado del campo
+        // Busca el valor real por nombre de campo, no por posición
         function getSmartValue(student, fieldName) {
             const normSearch = smartNorm(fieldName);
             const key = Object.keys(student).find(k => smartNorm(k) === normSearch);
@@ -331,10 +330,7 @@
             };
 
             try {
-                // 1. Obtener cambios persistidos desde la Nube primero
                 const cloudMods = await window.getCloudData();
-
-                // 2. Cargar Google Sheets (Modo Lectura)
                 for (const [year, url] of Object.entries(SHEET_URLS)) {
                     if (!url || !url.startsWith('http')) continue;
                     const response = await fetch(url);
@@ -343,7 +339,6 @@
                     allData = [...allData, ...parsed];
                 }
 
-                // 3. Fusionar datos (DNI es la llave de unión)
                 if (allData.length > 0) {
                     students = allData.map(s => {
                         const cloudKey = s.DNI || s.id;
@@ -353,11 +348,10 @@
                     students = Object.values(cloudMods);
                 }
                 
-                if (statusEl) statusEl.innerHTML = `<span class="text-emerald-600 font-black text-[10px]">BASE NORMALIZADA Y SINCRONIZADA: ${new Date().toLocaleTimeString()}</span>`;
+                if (statusEl) statusEl.innerHTML = `<span class="text-emerald-600 font-black text-[10px]">VINCULACIÓN INTELIGENTE ACTIVA: ${new Date().toLocaleTimeString()}</span>`;
                 render();
             } catch (e) {
-                console.error("Fallo carga:", e);
-                if (statusEl) statusEl.innerHTML = `<span class="text-rose-500 font-bold text-[10px]">ERROR DE CARGA</span>`;
+                if (statusEl) statusEl.innerHTML = `<span class="text-rose-500 font-bold text-[10px]">REINTENTANDO VINCULACIÓN...</span>`;
             } finally {
                 if (btn) btn.classList.remove('animate-spin');
                 lucide.createIcons();
@@ -406,6 +400,7 @@
                 rawHeaders.forEach((h, i) => {
                     let key = h;
                     const hNorm = smartNorm(h);
+                    // Unificar campo de Sangre para tabla principal
                     if (hNorm === 'grupo sanguineo' || hNorm === 'factor sangre' || hNorm === 'factor') key = 'Grupo Sangre';
                     obj[key] = rowData[i] || '';
                 });
@@ -415,7 +410,7 @@
             });
         }
 
-        // --- ORDEN ALFABÉTICO ESPAÑOL ---
+        // Ordenamiento Alfabético Español
         function sortList(list) {
             return list.sort((a, b) => {
                 const ap1 = (a.Apellido || '').trim();
@@ -430,7 +425,7 @@
 
         window.render = () => {
             let filtered = students.filter(s => {
-                const searchStr = `${s.Nombre} ${s.Apellido} ${s.DNI} ${getSmartValue(s, 'Prontuario')} ${getSmartValue(s, 'LOCALIDAD3')}`.toLowerCase();
+                const searchStr = `${s.Nombre} ${s.Apellido} ${s.DNI} ${getSmartValue(s, 'Prontuario')}`.toLowerCase();
                 const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
                 const matchesYear = filterYear === 'Todos' || (s['Año'] && s['Año'].includes(filterYear.split(' ')[0]));
                 const isMissing = showIncompleteOnly ? (getCompleteness(s) < 100) : true;
@@ -489,7 +484,7 @@
                         </tr>`;
                 }).join('');
             }
-            if (filtered.length === 0) tbody.innerHTML = `<tr><td colspan="5" class="p-20 text-center text-slate-400 italic">No se han cargado datos o no coinciden con la búsqueda</td></tr>`;
+            if (filtered.length === 0) tbody.innerHTML = `<tr><td colspan="5" class="p-20 text-center text-slate-400 italic">No hay resultados o falta configurar Google Sheets</td></tr>`;
             lucide.createIcons();
         }
 
@@ -502,7 +497,7 @@
             return (completed / critFields.length) * 100;
         }
 
-        // --- INFORMES E INTERFAZ ---
+        // --- INTERFAZ DE MODALES ---
 
         window.openPrintIndividualModal = (id) => {
             const s = students.find(x => x.id === id);
@@ -520,7 +515,7 @@
                 }
             });
 
-            content.innerHTML = `<div class="p-2 border-[12px] border-double border-slate-900 bg-white">
+            content.innerHTML = `<div class="p-2 border-[12px] border-double border-slate-900 bg-white relative">
                 <div class="flex justify-between items-start mb-8 border-b-4 border-slate-900 pb-4">
                     <div><h1 class="text-4xl font-black uppercase tracking-tighter text-slate-900 leading-none">LEGAJO PERSONAL</h1><p class="text-[10px] font-black text-indigo-700 mt-2 uppercase tracking-widest">SISTEMA ROL DE COMBATE</p></div>
                     <div class="text-right font-black uppercase"><p class="text-xl">${s.Apellido}, ${s.Nombre}</p><p class="text-[10px] text-slate-500">DNI: ${s.DNI || '---'}</p></div>
@@ -565,7 +560,7 @@
             const container = document.getElementById('custom-list-preview');
             const previewData = sortList([...students]).slice(0, 10);
             if (selectedCols.length === 0) { container.innerHTML = `<div class="p-20 text-center text-slate-400 italic font-bold">MARQUE LAS COLUMNAS PARA EL INFORME</div>`; return; }
-            let html = `<table class="w-full text-left border-collapse text-[9px] table-auto"><thead class="bg-indigo-950 text-white font-black uppercase tracking-widest sticky top-0"><tr>${selectedCols.map(c => `<th class="p-3 border-r border-indigo-900">${c}</th>`).join('')}</tr></thead><tbody class="divide-y divide-slate-100 text-slate-600 font-bold uppercase">${previewData.map(s => `<tr>${selectedCols.map(c => `<td class="p-3 border-r max-w-[150px] truncate">${formatVal(s[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+            let html = `<table class="w-full text-left border-collapse text-[9px] table-auto"><thead class="bg-indigo-950 text-white font-black uppercase tracking-widest sticky top-0"><tr>${selectedCols.map(c => `<th class="p-3 border-r border-indigo-900">${c}</th>`).join('')}</tr></thead><tbody class="divide-y divide-slate-100 text-slate-600 font-bold uppercase">${previewData.map(s => `<tr>${selectedCols.map(c => `<td class="p-3 border-r max-w-[150px] truncate font-black text-slate-900">${formatVal(s[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
             container.innerHTML = html;
         }
 
@@ -581,7 +576,7 @@
             setTimeout(() => { printWin.print(); printWin.close(); }, 500);
         }
 
-        // --- EVENTOS ---
+        // --- EVENTOS DOM ---
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('search-input')?.addEventListener('input', (e) => { searchTerm = e.target.value; render(); });
             document.getElementById('filter-year')?.addEventListener('change', (e) => { filterYear = e.target.value; render(); });
@@ -616,7 +611,7 @@
             const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=ISO-8859-1' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `ROL_EXPORTADO_${new Date().toISOString().slice(0,10)}.csv`;
+            link.download = `ROL_AUDITADO_${new Date().toISOString().slice(0,10)}.csv`;
             link.click();
         }
         window.nextPage = () => { currentPage++; render(); }
