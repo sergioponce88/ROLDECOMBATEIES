@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Rol de Combate - Sistema de Auditoría Profesional</title>
-    <!-- Tailwind CSS -->
+    <title>Gestión de Rol de Combate - Sistema Profesional</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
@@ -17,17 +15,14 @@
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; }
             body { background: white !important; padding: 0 !important; }
             .modal { position: absolute !important; left: 0 !important; top: 0 !important; display: block !important; box-shadow: none !important; width: 100% !important; }
             .bg-slate-900\/60 { display: none !important; }
-            .scale-in { transform: none !important; animation: none !important; }
             @page { size: portrait; margin: 10mm; }
         }
-
         .scale-in { animation: scaleIn 0.2s ease-out; }
         @keyframes scaleIn { from { transform: scale(0.98); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
@@ -35,7 +30,6 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen">
 
     <div id="app" class="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto no-print text-center sm:text-left">
-        
         <!-- HEADER -->
         <header class="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div class="flex items-center gap-4">
@@ -47,7 +41,7 @@
                     <div id="sync-status" class="flex items-center gap-2 text-sm text-slate-500">
                         <span class="flex items-center gap-1 text-slate-400 italic text-xs">
                             <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> 
-                            Iniciando modo espía y protección de carga...
+                            Conectando...
                         </span>
                     </div>
                 </div>
@@ -55,56 +49,52 @@
             
             <div class="flex flex-wrap gap-2 w-full lg:w-auto">
                 <button id="btn-reload" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 px-4 py-2.5 rounded-xl transition font-medium shadow-sm active:scale-95 text-slate-700">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                    Recargar Datos
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Recargar
                 </button>
                 <button id="btn-custom-list" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-4 py-2.5 rounded-xl transition font-semibold border border-indigo-100 shadow-sm active:scale-95">
-                    <i data-lucide="layout-list" class="w-4 h-4"></i>
-                    Informe por Columnas
+                    <i data-lucide="layout-list" class="w-4 h-4"></i> Listado
                 </button>
                 <button id="btn-add-new" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl transition shadow-md font-bold active:scale-95">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    Nuevo Ingreso
+                    <i data-lucide="plus" class="w-4 h-4"></i> Nuevo
                 </button>
                 <button id="btn-export" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl transition shadow-md font-medium active:scale-95">
-                    <i data-lucide="download" class="w-4 h-4"></i>
-                    Exportar Todo
+                    <i data-lucide="download" class="w-4 h-4"></i> Exportar
                 </button>
             </div>
         </header>
 
-        <!-- DASHBOARD STATS -->
+        <!-- STATS -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <p class="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Total General</p>
-                <p id="stat-total" class="text-3xl font-black text-slate-900 tracking-tighter">0</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Total</p>
+                <p id="stat-total" class="text-3xl font-black text-slate-900">0</p>
             </div>
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500">
-                <p class="text-[10px] font-bold text-blue-400 uppercase mb-1 tracking-wider">1er Año</p>
-                <p id="stat-1er" class="text-3xl font-black text-blue-600 tracking-tighter">0</p>
+                <p class="text-[10px] font-bold text-blue-400 uppercase mb-1">1er Año</p>
+                <p id="stat-1er" class="text-3xl font-black text-blue-600">0</p>
             </div>
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-indigo-500">
-                <p class="text-[10px] font-bold text-indigo-400 uppercase mb-1 tracking-wider">2do Año</p>
-                <p id="stat-2do" class="text-3xl font-black text-indigo-600 tracking-tighter">0</p>
+                <p class="text-[10px] font-bold text-indigo-400 uppercase mb-1">2do Año</p>
+                <p id="stat-2do" class="text-3xl font-black text-indigo-600">0</p>
             </div>
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-violet-500">
-                <p class="text-[10px] font-bold text-violet-400 uppercase mb-1 tracking-wider">3er Año</p>
-                <p id="stat-3er" class="text-3xl font-black text-violet-600 tracking-tighter">0</p>
+                <p class="text-[10px] font-bold text-violet-400 uppercase mb-1">3er Año</p>
+                <p id="stat-3er" class="text-3xl font-black text-violet-600">0</p>
             </div>
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-amber-500 text-amber-600">
-                <p class="text-[10px] font-bold text-amber-500 uppercase mb-1 tracking-wider">Datos Faltantes</p>
-                <p id="stat-incomplete" class="text-3xl font-black tracking-tighter">0</p>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-amber-500">
+                <p class="text-[10px] font-bold text-amber-500 uppercase mb-1">Incompletos</p>
+                <p id="stat-incomplete" class="text-3xl font-black text-amber-600">0</p>
             </div>
         </div>
 
-        <!-- SEARCH & FILTERS -->
+        <!-- SEARCH -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
             <div class="lg:col-span-6 relative">
                 <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
                 <input type="text" id="search-input" placeholder="Buscar por Apellido, Nombre, DNI o Prontuario..." class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm transition">
             </div>
             <div class="lg:col-span-3">
-                <select id="filter-year" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm cursor-pointer appearance-none uppercase text-xs font-black tracking-widest text-center text-slate-700">
+                <select id="filter-year" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm cursor-pointer appearance-none uppercase text-xs font-black text-center">
                     <option value="Todos">Todos los cursos</option>
                     <option value="1er Año">1er Año</option>
                     <option value="2do Año">2do Año</option>
@@ -113,13 +103,12 @@
             </div>
             <div class="lg:col-span-3">
                 <button id="toggle-incomplete" class="w-full h-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition font-medium shadow-sm active:scale-95 uppercase text-[10px] font-black tracking-widest">
-                    <i data-lucide="alert-circle" class="w-5 h-5 text-amber-500"></i>
-                    Filtrar Incompletos
+                    <i data-lucide="alert-circle" class="w-5 h-5 text-amber-500"></i> Filtrar Faltantes
                 </button>
             </div>
         </div>
 
-        <!-- TABLE SECTION -->
+        <!-- TABLE -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto text-left">
                 <table class="w-full border-collapse">
@@ -128,69 +117,71 @@
                             <th class="p-5">Cadete / Identificación</th>
                             <th class="p-5 text-center">Curso / UR</th>
                             <th class="p-5 text-center">Salud / Sangre</th>
-                            <th class="p-5 text-center">Completitud</th>
+                            <th class="p-5 text-center">Estado</th>
                             <th class="p-5 text-right">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="table-body" class="divide-y divide-slate-100 text-sm font-medium">
-                        <!-- Filled by JS -->
-                    </tbody>
+                    <tbody id="table-body" class="divide-y divide-slate-100 text-sm font-medium"></tbody>
                 </table>
             </div>
-            <div class="p-5 border-t border-slate-100 bg-white flex justify-between items-center text-center">
-                <span id="pagination-info" class="text-xs font-semibold text-slate-500 italic uppercase tracking-widest">Iniciando auditoría...</span>
+            <div class="p-5 border-t border-slate-100 bg-white flex justify-between items-center">
+                <span id="pagination-info" class="text-xs font-semibold text-slate-500 italic uppercase">Orden Alfabético A-Z</span>
                 <div class="flex gap-2">
-                    <button id="btn-prev" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition active:scale-95"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-                    <button id="btn-next" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition active:scale-95"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                    <button id="btn-prev" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                    <button id="btn-next" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODALES -->
-
-    <div id="modal-edit" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print text-left">
+    <!-- MODAL EDITAR -->
+    <div id="modal-edit" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col scale-in border-4 border-white">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <div>
-                    <h2 class="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight"><i data-lucide="user-edit" class="text-indigo-600"></i> Expediente Digital</h2>
-                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">Los cambios se guardarán permanentemente en la nube</p>
+                    <h2 class="text-xl font-black text-slate-900 uppercase">Expediente Digital</h2>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-1">Cambios persistentes en la nube</p>
                 </div>
-                <button onclick="closeModals()" class="p-2 hover:bg-slate-200 rounded-full transition text-slate-400"><i data-lucide="x" class="w-6 h-6"></i></button>
+                <button onclick="window.closeModals()" class="p-2 hover:bg-slate-200 rounded-full transition text-slate-400"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <form id="form-edit" class="p-6 overflow-y-auto flex-1 custom-scrollbar">
-                <div id="edit-fields-container" class="space-y-8"></div>
+                <div id="edit-fields-container" class="space-y-8 text-left"></div>
                 <div class="flex justify-end gap-3 mt-8 pt-6 border-t bg-white sticky bottom-0 z-10 shadow-[0_-10px_20px_rgba(255,255,255,0.8)]">
-                    <button type="button" onclick="closeModals()" class="px-6 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition uppercase text-xs">Cerrar</button>
+                    <button type="button" onclick="window.closeModals()" class="px-6 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition uppercase text-xs">Cerrar</button>
                     <button type="submit" class="px-10 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 shadow-lg transition active:scale-95 uppercase text-xs">Guardar Cambios</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="modal-print-individual" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 text-left">
+    <!-- MODAL PRINT -->
+    <div id="modal-print-individual" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col scale-in">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-800 text-white no-print">
-                <h2 class="text-sm font-bold uppercase tracking-widest text-white">Previsualización de Ficha Profesional</h2>
+                <h2 class="text-sm font-bold uppercase tracking-widest">Ficha Profesional</h2>
                 <div class="flex gap-2">
-                    <button onclick="window.print()" class="px-6 py-2 bg-emerald-500 text-white rounded-xl font-black flex items-center gap-2 shadow-lg hover:bg-emerald-600 transition"><i data-lucide="printer" class="w-4 h-4"></i> IMPRIMIR</button>
-                    <button onclick="closeModals()" class="p-2 hover:bg-slate-700 rounded-full text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                    <button onclick="window.print()" class="px-6 py-2 bg-emerald-500 text-white rounded-xl font-black flex items-center gap-2 hover:bg-emerald-600 transition shadow-lg"><i data-lucide="printer" class="w-4 h-4"></i> IMPRIMIR</button>
+                    <button onclick="window.closeModals()" class="p-2 hover:bg-slate-700 rounded-full text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
                 </div>
             </div>
-            <div id="print-individual-content" class="p-10 overflow-y-auto flex-1 bg-white print-only text-slate-900"></div>
+            <div id="print-individual-content" class="p-10 overflow-y-auto flex-1 bg-white print-only text-slate-900 text-left"></div>
         </div>
     </div>
 
+    <!-- MODAL LISTADO -->
     <div id="modal-custom-list" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print text-left">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col scale-in">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-900 text-white uppercase font-black tracking-widest">
-                <h2 class="text-lg">Generador de Informes por Columnas</h2>
-                <button onclick="closeModals()" class="p-2 hover:bg-indigo-800 rounded-full text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                <h2 class="text-lg">Generador de Informes</h2>
+                <button onclick="window.closeModals()" class="p-2 hover:bg-indigo-800 rounded-full text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
-            <div class="p-6 overflow-y-auto flex-1 custom-scrollbar text-center">
-                <div id="column-selector" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 bg-slate-50 p-4 rounded-xl border mb-6 text-left"></div>
+            <div class="p-6 overflow-y-auto flex-1 custom-scrollbar">
+                <div id="column-selector" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 bg-slate-50 p-4 rounded-xl border mb-6"></div>
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-black text-lg text-slate-900 tracking-tight">Vista Previa (A-Z)</h3>
+                    <div class="flex gap-4">
+                        <button onclick="window.selectAllColumns(true)" class="text-[10px] font-black text-indigo-600">MARCAR TODO</button>
+                        <button onclick="window.selectAllColumns(false)" class="text-[10px] font-black text-slate-400">LIMPIAR</button>
+                    </div>
                     <button id="btn-print-list" class="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition"><i data-lucide="printer" class="w-4 h-4 inline mr-2"></i> Generar Reporte A4</button>
                 </div>
                 <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-inner" id="custom-list-preview"></div>
@@ -198,46 +189,42 @@
         </div>
     </div>
 
-    <div id="modal-add" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print text-left">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden scale-in border-2 border-emerald-100">
-            <div class="p-6 border-b bg-emerald-600 text-white uppercase font-black tracking-widest"><h2 class="text-lg flex items-center gap-2"><i data-lucide="plus"></i> Nuevo Cadete</h2></div>
+    <!-- MODAL ALTA -->
+    <div id="modal-add" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden scale-in">
+            <div class="p-6 border-b bg-emerald-600 text-white uppercase font-black tracking-widest text-center"><h2 class="text-lg">Alta de Nuevo Cadete</h2></div>
             <form id="form-add" class="p-8 space-y-4">
                 <input type="text" name="Apellido" required placeholder="Apellido" class="w-full border p-4 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 uppercase font-bold text-sm">
                 <input type="text" name="Nombre" required placeholder="Nombre" class="w-full border p-4 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 uppercase font-bold text-sm">
                 <input type="text" name="DNI" required placeholder="DNI" class="w-full border p-4 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
                 <select name="Año" class="w-full border p-4 rounded-xl outline-none text-sm font-bold uppercase cursor-pointer"><option value="1er Año">1er Año</option><option value="2do Año">2do Año</option><option value="3er Año">3er Año</option></select>
-                <div class="flex justify-end gap-3 mt-8"><button type="submit" class="px-10 py-4 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 active:scale-95 transition text-xs tracking-widest uppercase">REGISTRAR EN NUBE</button></div>
+                <div class="flex justify-end gap-3 mt-8"><button type="submit" class="px-10 py-4 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 transition">REGISTRAR</button></div>
             </form>
         </div>
     </div>
 
-    <!-- LÓGICA UNIFICADA MODULO -->
+    <!-- FIREBASE & LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // MODO ESPÍA: Logger centralizado
+        // MODO ESPÍA
         function logSpy(msg, data = null) {
-            const time = new Date().toLocaleTimeString();
-            console.log(`[ESPÍA ${time}] 🕵️‍♂️ ${msg}`);
-            if (data) console.dir(data);
+            console.log(`[ESPÍA] 🕵️‍♂️ ${msg}`, data || '');
         }
 
+        // Firebase Setup
         let db, auth, appId;
-        
-        // --- INICIALIZACIÓN SEGURA DE FIREBASE ---
         try {
-            logSpy("Iniciando configuración de Firebase...");
-            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-            const app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            logSpy("Firebase inicializado correctamente.");
-        } catch (e) {
-            logSpy("❌ Error inicializando Firebase. Variables de entorno ausentes.", e);
-        }
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+            if (firebaseConfig) {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            }
+        } catch (e) { logSpy("Firebase Init Falló (Entorno Externo)"); }
 
         let students = [];
         let searchTerm = '';
@@ -250,15 +237,15 @@
 
         const DATA_SECTIONS = [
             { name: 'Identificación y Legajo', fields: ['Apellido', 'Nombre', 'DNI', 'CUIL', 'Legajo', 'Prontuario', 'Año', 'Sexo', 'Fecha Nac', 'Edad', 'Est. Civil', 'UR', 'RELIGIÓN'], color: 'indigo' },
-            { name: 'Ubicación y Jurisdicción', fields: ['Domicilio', 'Localidad', 'Departamento', 'Comisaria', 'DOMICILIO REAL (Lugar donde vive)', 'LOCALIDAD3', 'COMISARIA JURISDICCIONAL (Comisaría a la que corresponde según donde vive)'], color: 'cyan' },
-            { name: 'Salud y Biotipo', fields: ['Grupo Sangre', 'Grupo Sanguineo', 'Estatura', 'Peso', 'IMC', 'Estado IMC', 'Enfermedades', 'Traumas', 'Relato Lesion', 'Ant Familiares'], color: 'rose' },
-            { name: 'Datos de los Padres', fields: ['APELLIDO Y NOMBRE DE PADRE (Contestar solo si posee)', 'N° DNI DE PADRE (Contestar solo si posee)', 'VIVE SU PADRE (Contestar solo si posee)', 'PROFESION DE PADRE (Contestar solo si posee)', 'APELLIDO Y NOMBRE DE MADRE (Contestar solo si posee)', 'N° DNI DE MADRE (Contestar solo si posee)', 'VIVE SU MADRE (Contestar solo si posee)', 'PROFESION DE MADRE (Contestar solo si posee)'], color: 'slate' },
-            { name: 'Contacto y Redes', fields: ['Celular', 'N° TELÉFONO (Uso Personal)', 'CORREO ELECTRONICO', 'Instagram', 'Facebook', 'Tik Tok'], color: 'blue' },
+            { name: 'Jurisdicción y Domicilio', fields: ['Domicilio', 'Localidad', 'Departamento', 'Comisaria', 'DOMICILIO REAL (Lugar donde vive)', 'LOCALIDAD3', 'COMISARIA JURISDICCIONAL (Comisaría a la que corresponde según donde vive)'], color: 'cyan' },
+            { name: 'Salud y Grupo Sanguíneo', fields: ['Grupo Sangre', 'Grupo Sanguineo', 'Estatura', 'Peso', 'IMC', 'Estado IMC', 'Enfermedades', 'Traumas', 'Relato Lesion', 'Ant Familiares'], color: 'rose' },
+            { name: 'Padre (Fijo)', fields: ['APELLIDO Y NOMBRE DE PADRE (Contestar solo si posee)', 'N° DNI DE PADRE (Contestar solo si posee)', 'VIVE SU PADRE (Contestar solo si posee)', 'FECHA DE NACIMIENTO DE PADRE (Contestar solo si posee)', 'NACIONALIDAD DE PADRE (Contestar solo si posee)', 'N° TELEFONO FIJO DE PADRE(Contestar solo si posee)', 'DOMICILIO DE PADRE (Contestar solo si posee)', 'PROFESION DE PADRE (Contestar solo si posee)'], color: 'slate' },
+            { name: 'Madre (Fijo)', fields: ['APELLIDO Y NOMBRE DE MADRE (Contestar solo si posee)', 'N° DNI DE MADRE (Contestar solo si posee)', 'VIVE SU MADRE (Contestar solo si posee)', 'FECHA DE NACIMIENTO DE MADRE (Contestar solo si posee)', 'NACIONALIDAD DE MADRE (Contestar solo si posee)', 'N° TELEFONO FIJO DE MADRE(Contestar solo si posee)', 'DOMICILIO DE MADRE (Contestar solo si posee)', 'PROFESION DE MADRE (Contestar solo si posee)'], color: 'rose' },
             { name: 'Vivienda y Familia', fields: ['Hermanos', 'ALQUILA', 'VIVE EN DOMICILIO DE UN FAMILIAR?', 'DOMICILIO DE UN FAMILIAR ( Contestar solo si vive en un domicilio de algún familiar)', 'COMISARIA JURISDICCIONAL DONDE VIVE ALGUN FAMILIAR ( Contestar solo si vive en un domicilio de algún familiar)'], color: 'orange' },
+            { name: 'Contacto y Redes', fields: ['Celular', 'N° TELÉFONO (Uso Personal)', 'CORREO ELECTRONICO', 'Instagram', 'Facebook', 'Tik Tok'], color: 'blue' },
             { name: 'Servicio y Armamento', fields: ['Jerarquia', 'Arma Marca', 'Arma Serie', 'Act Fisica', 'Tabaco', 'Alcohol'], color: 'emerald' }
         ];
 
-        // --- FUNCIONES DE NORMALIZACIÓN ---
         function smartNorm(str) {
             if (!str) return '';
             return str.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ').replace(/[()]/g, '').replace(/[.?]/g, '');
@@ -282,12 +269,11 @@
             return key ? student[key] : '';
         }
 
-        // --- CARGA DE DATOS ---
         async function fetchFromSheets() {
-            logSpy("Iniciando fetchFromSheets...");
+            logSpy("Iniciando carga de datos...");
             const statusEl = document.getElementById('sync-status');
             const btnReload = document.getElementById('btn-reload');
-            if (btnReload) btnReload.classList.add('animate-spin');
+            if (btnReload) btnReload.classList.add('animate-pulse');
             
             let allData = [];
             const SHEET_URLS = {
@@ -297,27 +283,20 @@
             };
 
             try {
-                // 1. Recuperar cambios desde Firestore
-                logSpy("Pidiendo datos a Cloud...");
                 const cloudMods = {};
-                if (auth && auth.currentUser) {
+                if (db && auth && auth.currentUser) {
                     const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'modificaciones'));
                     snapshot.forEach(doc => { cloudMods[doc.id] = doc.data(); });
-                    logSpy(`Datos Cloud recuperados: ${snapshot.size}`);
                 }
 
-                // 2. Cargar Excel
                 for (const [year, url] of Object.entries(SHEET_URLS)) {
                     if (!url || !url.startsWith('http')) continue;
-                    logSpy(`Cargando Excel curso ${year}...`);
                     const response = await fetch(url);
                     const text = await response.text();
                     const parsed = parseCSV(text, year);
-                    logSpy(`Procesados ${parsed.length} registros del curso ${year}`);
                     allData = [...allData, ...parsed];
                 }
 
-                // 3. Unir
                 if (allData.length > 0) {
                     students = allData.map(s => {
                         const cloudKey = s.DNI || s.id;
@@ -327,13 +306,13 @@
                     students = Object.values(cloudMods);
                 }
                 
-                if (statusEl) statusEl.innerHTML = `<span class="text-emerald-600 font-black text-[10px]">CONEXIÓN ACTIVA: ${new Date().toLocaleTimeString()}</span>`;
+                if (statusEl) statusEl.innerHTML = `<span class="text-emerald-600 font-bold text-[10px]">LISTO: ${new Date().toLocaleTimeString()}</span>`;
                 render();
             } catch (e) {
-                logSpy("❌ Error cargando datos", e);
-                if (statusEl) statusEl.innerHTML = `<span class="text-rose-500 font-bold text-[10px]">ERROR DE CONEXIÓN</span>`;
+                if (statusEl) statusEl.innerHTML = `<span class="text-rose-500 font-bold text-[10px]">ERROR NUBE</span>`;
             } finally {
-                if (btnReload) btnReload.classList.remove('animate-spin');
+                if (btnReload) btnReload.classList.remove('animate-pulse');
+                lucide.createIcons();
             }
         }
 
@@ -367,8 +346,7 @@
                 const obj = {};
                 rawHeaders.forEach((h, i) => {
                     let key = h;
-                    const hNorm = smartNorm(h);
-                    if (hNorm === 'grupo sanguineo' || hNorm === 'factor sangre') key = 'Grupo Sangre';
+                    if (smartNorm(h) === 'grupo sanguineo') key = 'Grupo Sangre';
                     obj[key] = rowData[i] || '';
                 });
                 obj.id = Math.random().toString(36).substr(2, 9);
@@ -385,8 +363,7 @@
             });
         }
 
-        function render() {
-            logSpy("Iniciando renderizado de tabla...");
+        const render = () => {
             let filtered = students.filter(s => {
                 const searchStr = `${s.Nombre} ${s.Apellido} ${s.DNI}`.toLowerCase();
                 const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
@@ -415,10 +392,10 @@
                     
                     return `
                         <tr class="hover:bg-slate-50 border-b border-slate-50 transition-colors">
-                            <td class="p-5"><div class="font-black text-slate-900 uppercase text-[11px]">${s.Apellido || 'S/A'}, ${s.Nombre || 'S/N'}</div><div class="text-[9px] text-slate-400 font-mono italic">DNI: ${s.DNI || '---'}</div></td>
-                            <td class="p-5 text-center"><span class="px-3 py-0.5 rounded-full text-[9px] font-black border tracking-tighter ${yearClass}">${s['Año'] || 'S/D'}</span></td>
+                            <td class="p-5 text-left"><div class="font-black text-slate-900 uppercase text-[11px]">${s.Apellido || 'S/A'}, ${s.Nombre || 'S/N'}</div><div class="text-[9px] text-slate-400 font-mono italic">DNI: ${s.DNI || '---'}</div></td>
+                            <td class="p-5 text-center"><span class="px-3 py-0.5 rounded-full text-[9px] font-black border tracking-tighter ${yearClass}">${s['Año'] || 'S/D'}</span><div class="text-[8px] font-bold mt-1 text-slate-400">${getSmartValue(s, 'UR')}</div></td>
                             <td class="p-5 text-center"><span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded text-[10px] font-black border border-rose-100 uppercase">${getSmartValue(s, 'Grupo Sangre') || '---'}</span></td>
-                            <td class="p-5 min-w-[120px]"><div class="flex items-center gap-2"><div class="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden border"><div class="h-full ${colorClass}" style="width: ${comp}%"></div></div><span class="text-[10px] font-black text-slate-500">${Math.round(comp)}%</span></div></td>
+                            <td class="p-5 text-center"><div class="flex items-center gap-2"><div class="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden border"><div class="h-full ${colorClass}" style="width: ${comp}%"></div></div><span class="text-[10px] font-black text-slate-500">${Math.round(comp)}%</span></div></td>
                             <td class="p-5 text-right"><div class="flex justify-end gap-1"><button class="btn-p- ficha p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition" data-id="${s.id}"><i data-lucide="printer" class="w-4 h-4"></i></button><button class="btn-e- ficha p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition" data-id="${s.id}"><i data-lucide="edit-3" class="w-4 h-4"></i></button></div></td>
                         </tr>`;
                 }).join('');
@@ -426,12 +403,11 @@
 
             document.querySelectorAll('.btn-p-').forEach(b => b.onclick = () => openPrintIndividualModal(b.dataset.id));
             document.querySelectorAll('.btn-e-').forEach(b => b.onclick = () => openEditModal(b.dataset.id));
-            if (filtered.length === 0) tbody.innerHTML = `<tr><td colspan="5" class="p-20 text-center text-slate-400 italic">No hay resultados</td></tr>`;
             lucide.createIcons();
         }
 
+        const critFields = ['Apellido', 'Nombre', 'DNI', 'CUIL', 'Celular', 'LOCALIDAD3', 'Grupo Sangre'];
         function getCompleteness(student) {
-            const critFields = ['Apellido', 'Nombre', 'DNI', 'CUIL', 'Celular', 'LOCALIDAD3', 'Grupo Sangre'];
             const completed = critFields.filter(f => {
                 const val = getSmartValue(student, f);
                 return val && String(val).trim() !== '' && val !== '---';
@@ -439,7 +415,6 @@
             return (completed / critFields.length) * 100;
         }
 
-        // --- INTERFAZ MODALES ---
         function openPrintIndividualModal(id) {
             const s = students.find(x => x.id === id);
             if (!s) return;
@@ -452,7 +427,7 @@
                     if (val) fieldsToShow.push({ label: f, value: val });
                 });
                 if (fieldsToShow.length > 0) {
-                    sectionsHtml += `<div class="mb-5 break-inside-avoid text-left"><h3 class="bg-slate-900 text-white px-3 py-1 text-[10px] font-black uppercase tracking-widest border-b-2 border-slate-900 mb-3">${section.name}</h3><div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-[10px]">${fieldsToShow.map(f => `<div class="border-b border-slate-50 pb-0.5"><p class="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">${f.label}</p><p class="text-slate-900 font-bold uppercase truncate">${formatVal(f.value)}</p></div>`).join('')}</div></div>`;
+                    sectionsHtml += `<div class="mb-5 break-inside-avoid text-left"><h3 class="bg-slate-900 text-white px-3 py-1 text-[10px] font-black uppercase tracking-widest border-b-2 border-slate-900 mb-3">${section.name}</h3><div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-[10px]">${fieldsToShow.map(f => `<div class="border-b border-slate-50 pb-0.5 text-left"><p class="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">${f.label}</p><p class="text-slate-900 font-bold uppercase truncate">${formatVal(f.value)}</p></div>`).join('')}</div></div>`;
                 }
             });
             content.innerHTML = `<div class="p-2 border-[12px] border-double border-slate-900 bg-white relative"><div class="flex justify-between items-start mb-8 border-b-4 border-slate-900 pb-4"><div class="text-left"><h1 class="text-4xl font-black uppercase tracking-tighter text-slate-900 leading-none">LEGAJO PERSONAL</h1><p class="text-[10px] font-black text-indigo-700 mt-2 uppercase tracking-widest">SISTEMA ROL DE COMBATE</p></div><div class="text-right font-black uppercase text-slate-900"><p class="text-xl">${s.Apellido}, ${s.Nombre}</p><p class="text-[10px] text-slate-500">DNI: ${s.DNI || '---'}</p></div></div>${sectionsHtml}<div class="mt-16 flex justify-around"><div class="border-t-2 border-slate-400 w-48 text-center pt-2 font-black uppercase text-[8px]">Firma Titular</div><div class="border-t-2 border-slate-400 w-48 text-center pt-2 font-black uppercase text-[8px]">Sello Autoridad</div></div></div>`;
@@ -472,7 +447,7 @@
                     if (studentKey) sectionFields.push({ key: studentKey, label: f });
                 });
                 if (sectionFields.length > 0) {
-                    sectionsHtml += `<div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-${section.color}-300"><div class="flex items-center gap-3 mb-6 border-b border-${section.color}-100 pb-3 text-left"><span class="w-4 h-4 rounded-full bg-${section.color}-500 shadow-lg"></span><h3 class="font-black text-xs text-slate-700 uppercase tracking-widest text-left">${section.name}</h3></div><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">${sectionFields.map(f => `<div><label class="block text-[9px] font-black uppercase mb-1 text-slate-400 tracking-wider">${f.label}</label><input type="text" name="${f.key}" value="${s[f.key]}" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-xs outline-none focus:ring-4 focus:ring-${section.color}-500/10 focus:border-${section.color}-500 transition-all font-bold uppercase text-slate-700 shadow-sm"></div>`).join('')}</div></div>`;
+                    sectionsHtml += `<div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-${section.color}-300 mb-6"><div class="flex items-center gap-3 mb-6 border-b border-${section.color}-100 pb-3 text-left"><span class="w-4 h-4 rounded-full bg-${section.color}-500 shadow-lg"></span><h3 class="font-black text-xs text-slate-700 uppercase tracking-widest text-left">${section.name}</h3></div><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 text-left">${sectionFields.map(f => `<div><label class="block text-[9px] font-black uppercase mb-1 text-slate-400 tracking-wider text-left">${f.label}</label><input type="text" name="${f.key}" value="${s[f.key]}" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-xs outline-none focus:ring-4 focus:ring-${section.color}-500/10 focus:border-${section.color}-500 transition-all font-bold uppercase text-slate-700 shadow-sm"></div>`).join('')}</div></div>`;
                 }
             });
             container.innerHTML = sectionsHtml;
@@ -480,7 +455,10 @@
             lucide.createIcons();
         }
 
-        function updateCustomListPreview() {
+        window.closeModals = () => { document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); editingId = null; }
+        window.selectAllColumns = (state) => { document.querySelectorAll('#column-selector input').forEach(i => i.checked = state); window.updateCustomListPreview(); }
+
+        window.updateCustomListPreview = () => {
             const selectedCols = Array.from(document.querySelectorAll('#column-selector input:checked')).map(cb => cb.value);
             const container = document.getElementById('custom-list-preview');
             const previewData = sortList([...students]).slice(0, 10);
@@ -489,25 +467,46 @@
             container.innerHTML = html;
         }
 
-        window.closeModals = () => { document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); editingId = null; }
-        window.updateCustomListPreview = updateCustomListPreview;
-        window.selectAllColumns = (state) => { document.querySelectorAll('#column-selector input').forEach(i => i.checked = state); updateCustomListPreview(); }
-
-        // --- EVENTOS DOM ---
+        // --- INIT & EVENTS ---
         document.addEventListener('DOMContentLoaded', () => {
-            logSpy("Iniciando escucha de eventos DOM...");
             const el = (id) => document.getElementById(id);
-            
             if (el('btn-reload')) el('btn-reload').onclick = fetchFromSheets;
             if (el('btn-custom-list')) el('btn-custom-list').onclick = () => {
                 const selector = el('column-selector');
-                const defaultCols = ['Apellido', 'Nombre', 'DNI', 'Grupo Sangre', 'Año', 'Celular'];
-                selector.innerHTML = allHeaders.map(h => `<label class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white cursor-pointer border border-transparent shadow-sm bg-white/50 border-slate-100 transition text-left"><input type="checkbox" value="${h}" ${defaultCols.includes(h) ? 'checked' : ''} onchange="window.updateCustomListPreview()" class="w-4 h-4 text-indigo-600 rounded"><span class="text-[9px] font-black uppercase tracking-tight">${h}</span></label>`).join('');
-                updateCustomListPreview();
+                selector.innerHTML = allHeaders.map(h => `<label class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white cursor-pointer border border-transparent shadow-sm bg-white/50 border-slate-100 transition text-left"><input type="checkbox" value="${h}" onchange="window.updateCustomListPreview()" class="w-4 h-4 text-indigo-600 rounded"><span class="text-[9px] font-black uppercase tracking-tight">${h}</span></label>`).join('');
+                window.updateCustomListPreview();
                 el('modal-custom-list').classList.add('active');
-                lucide.createIcons();
             };
             if (el('btn-add-new')) el('btn-add-new').onclick = () => el('modal-add').classList.add('active');
+            if (el('btn-next')) el('btn-next').onclick = () => { currentPage++; render(); };
+            if (el('btn-prev')) el('btn-prev').onclick = () => { if (currentPage > 1) { currentPage--; render(); } };
+            
+            if (el('search-input')) el('search-input').oninput = (e) => { searchTerm = e.target.value; render(); };
+            if (el('filter-year')) el('filter-year').onchange = (e) => { filterYear = e.target.value; render(); };
+            if (el('toggle-incomplete')) el('toggle-incomplete').onclick = () => { showIncompleteOnly = !showIncompleteOnly; el('toggle-incomplete').classList.toggle('bg-amber-100'); render(); };
+
+            if (el('form-edit')) el('form-edit').onsubmit = async (e) => {
+                e.preventDefault();
+                const data = {};
+                new FormData(e.target).forEach((v, k) => data[k] = v);
+                const cloudKey = data.DNI || editingId;
+                if (db) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'modificaciones', cloudKey), data);
+                students = students.map(st => st.id === editingId ? { ...st, ...data } : st);
+                window.closeModals();
+                render();
+            };
+
+            if (el('form-add')) el('form-add').onsubmit = async (e) => {
+                e.preventDefault();
+                const data = { id: Math.random().toString(36).substr(2, 9) };
+                new FormData(e.target).forEach((v, k) => data[k] = v);
+                const cloudKey = data.DNI || data.id;
+                if (db) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'modificaciones', cloudKey), data);
+                students = [data, ...students];
+                window.closeModals();
+                render();
+            };
+
             if (el('btn-print-list')) el('btn-print-list').onclick = () => {
                 const selectedCols = Array.from(document.querySelectorAll('#column-selector input:checked')).map(cb => cb.value);
                 if (selectedCols.length === 0) return;
@@ -518,38 +517,16 @@
                 setTimeout(() => { printWin.print(); printWin.close(); }, 500);
             };
 
-            if (el('search-input')) el('search-input').oninput = (e) => { searchTerm = e.target.value; render(); };
-            if (el('filter-year')) el('filter-year').onchange = (e) => { filterYear = e.target.value; render(); };
-            if (el('toggle-incomplete')) el('toggle-incomplete').onclick = () => { showIncompleteOnly = !showIncompleteOnly; el('toggle-incomplete').classList.toggle('bg-amber-100'); render(); };
-            if (el('btn-next')) el('btn-next').onclick = () => { currentPage++; render(); };
-            if (el('btn-prev')) el('btn-prev').onclick = () => { if (currentPage > 1) { currentPage--; render(); } };
-
-            if (el('form-edit')) el('form-edit').onsubmit = async (e) => {
-                e.preventDefault();
-                const data = {};
-                new FormData(e.target).forEach((v, k) => data[k] = v);
-                const cloudKey = data.DNI || editingId;
-                if (auth && auth.currentUser) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'modificaciones', cloudKey), data);
-                students = students.map(st => st.id === editingId ? { ...st, ...data } : st);
-                closeModals();
-                render();
+            const initAuth = async () => {
+                if (!auth) { fetchFromSheets(); return; }
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                onAuthStateChanged(auth, (user) => { if (user) fetchFromSheets(); });
             };
-
-            if (el('form-add')) el('form-add').onsubmit = async (e) => {
-                e.preventDefault();
-                const data = { id: Math.random().toString(36).substr(2, 9) };
-                new FormData(e.target).forEach((v, k) => data[k] = v);
-                const cloudKey = data.DNI || data.id;
-                if (auth && auth.currentUser) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'modificaciones', cloudKey), data);
-                students = [data, ...students];
-                closeModals();
-                render();
-            };
-
-            // Iniciar Auth y Carga
-            onAuthStateChanged(auth, (user) => {
-                if (user) { logSpy("Usuario Listo."); fetchFromSheets(); }
-            });
+            initAuth();
         });
 
         window.exportToCSV = () => {
