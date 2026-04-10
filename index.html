@@ -3,11 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Rol de Combate - Sistema Profesional de Auditoría</title>
+    <title>Gestión de Rol de Combate - Sistema de Auditoría Profesional</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        window.db = db;
+        window.auth = auth;
+        window.appId = appId;
+
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                window.fetchFromSheets();
+            } catch (error) {
+                console.error("Error de autenticación:", error);
+            }
+        };
+        initAuth();
+
+        window.saveStudentToCloud = async (id, data) => {
+            if (!auth.currentUser) return;
+            try {
+                const cloudKey = data.DNI || id;
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'modificaciones', cloudKey), data);
+            } catch (err) {
+                console.error("Error guardando cambios:", err);
+            }
+        };
+
+        window.getCloudData = async () => {
+            const mods = {};
+            try {
+                const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'modificaciones'));
+                snapshot.forEach(doc => { mods[doc.id] = doc.data(); });
+            } catch (err) {
+                console.error("Error recuperando cambios:", err);
+            }
+            return mods;
+        };
+    </script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -24,7 +76,6 @@
             .modal { position: absolute !important; left: 0 !important; top: 0 !important; display: block !important; box-shadow: none !important; width: 100% !important; }
             .bg-slate-900\/60 { display: none !important; }
             .scale-in { transform: none !important; animation: none !important; }
-            .print-container { padding: 0 !important; margin: 0 !important; border: none !important; }
             @page { size: portrait; margin: 10mm; }
         }
 
@@ -34,13 +85,12 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
 
-    <!-- CONTENEDOR PRINCIPAL -->
-    <div id="app" class="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto no-print">
+    <div id="app" class="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto no-print text-center sm:text-left">
         
-        <!-- CABECERA -->
+        <!-- HEADER -->
         <header class="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div class="flex items-center gap-4">
-                <div class="bg-indigo-700 p-3 rounded-xl text-white shadow-lg shadow-indigo-200">
+                <div class="bg-indigo-700 p-3 rounded-xl text-white shadow-lg">
                     <i data-lucide="shield-check" class="w-8 h-8"></i>
                 </div>
                 <div>
@@ -48,7 +98,7 @@
                     <div id="sync-status" class="flex items-center gap-2 text-sm text-slate-500">
                         <span class="flex items-center gap-1 text-slate-400 italic text-xs">
                             <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> 
-                            Vinculando datos inteligentes...
+                            Normalizando datos por nombre de campo...
                         </span>
                     </div>
                 </div>
@@ -57,20 +107,15 @@
             <div class="flex flex-wrap gap-2 w-full lg:w-auto">
                 <button onclick="fetchFromSheets()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 px-4 py-2.5 rounded-xl transition font-medium shadow-sm active:scale-95 text-slate-700">
                     <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
-                    Sincronizar Cloud
+                    Actualizar
                 </button>
                 <button onclick="openCustomListModal()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-4 py-2.5 rounded-xl transition font-semibold border border-indigo-100 shadow-sm active:scale-95">
                     <i data-lucide="layout-list" class="w-4 h-4"></i>
-                    Reporte por Columnas
+                    Listado Columnas
                 </button>
-                <label class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2.5 rounded-xl cursor-pointer transition font-medium shadow-sm active:scale-95 border border-slate-200">
-                    <i data-lucide="upload" class="w-4 h-4"></i>
-                    Subir CSV/Excel
-                    <input type="file" id="csv-upload" class="hidden" accept=".csv">
-                </label>
                 <button onclick="openAddModal()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl transition shadow-md font-bold active:scale-95">
                     <i data-lucide="plus" class="w-4 h-4"></i>
-                    Alta Nueva
+                    Nuevo
                 </button>
                 <button onclick="exportToCSV()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl transition shadow-md font-medium active:scale-95">
                     <i data-lucide="download" class="w-4 h-4"></i>
@@ -79,27 +124,27 @@
             </div>
         </header>
 
-        <!-- DASHBOARD STATS -->
+        <!-- STATS -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                 <p class="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Total General</p>
-                <p id="stat-total" class="text-3xl font-black text-slate-900">0</p>
+                <p id="stat-total" class="text-3xl font-black text-slate-900 tracking-tighter">0</p>
             </div>
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500">
                 <p class="text-[10px] font-bold text-blue-400 uppercase mb-1 tracking-wider">1er Año</p>
-                <p id="stat-1er" class="text-3xl font-black text-blue-600">0</p>
+                <p id="stat-1er" class="text-3xl font-black text-blue-600 tracking-tighter">0</p>
             </div>
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-indigo-500">
                 <p class="text-[10px] font-bold text-indigo-400 uppercase mb-1 tracking-wider">2do Año</p>
-                <p id="stat-2do" class="text-3xl font-black text-indigo-600">0</p>
+                <p id="stat-2do" class="text-3xl font-black text-indigo-600 tracking-tighter">0</p>
             </div>
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-violet-500">
                 <p class="text-[10px] font-bold text-violet-400 uppercase mb-1 tracking-wider">3er Año</p>
-                <p id="stat-3er" class="text-3xl font-black text-violet-600">0</p>
+                <p id="stat-3er" class="text-3xl font-black text-violet-600 tracking-tighter">0</p>
             </div>
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-amber-500">
-                <p class="text-[10px] font-bold text-amber-500 uppercase mb-1 tracking-wider">Incompletos</p>
-                <p id="stat-incomplete" class="text-3xl font-black text-amber-600">0</p>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-amber-500 text-amber-600">
+                <p class="text-[10px] font-bold text-amber-500 uppercase mb-1 tracking-wider">Faltan Datos</p>
+                <p id="stat-incomplete" class="text-3xl font-black tracking-tighter">0</p>
             </div>
         </div>
 
@@ -107,18 +152,10 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
             <div class="lg:col-span-6 relative">
                 <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
-                <input 
-                    type="text" 
-                    id="search-input"
-                    placeholder="Buscar por Apellido, Nombre, DNI o Prontuario..." 
-                    class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm transition"
-                >
+                <input type="text" id="search-input" placeholder="Buscar por Apellido, Nombre, DNI o Prontuario..." class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm transition">
             </div>
             <div class="lg:col-span-3">
-                <select 
-                    id="filter-year"
-                    class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm cursor-pointer appearance-none"
-                >
+                <select id="filter-year" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm cursor-pointer appearance-none uppercase text-xs font-black tracking-widest">
                     <option value="Todos">Todos los cursos</option>
                     <option value="1er Año">1er Año</option>
                     <option value="2do Año">2do Año</option>
@@ -126,12 +163,9 @@
                 </select>
             </div>
             <div class="lg:col-span-3">
-                <button 
-                    id="toggle-incomplete"
-                    class="w-full h-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition font-medium shadow-sm active:scale-95"
-                >
-                    <i data-lucide="alert-circle" class="w-5 h-5"></i>
-                    Auditoría Faltantes
+                <button id="toggle-incomplete" class="w-full h-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition font-medium shadow-sm active:scale-95">
+                    <i data-lucide="alert-circle" class="w-5 h-5 text-amber-500"></i>
+                    Filtrar Incompletos
                 </button>
             </div>
         </div>
@@ -141,11 +175,11 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-slate-50/80 text-slate-500 text-[10px] font-bold uppercase tracking-widest border-b">
+                        <tr class="bg-slate-50/80 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b">
                             <th class="p-5">Cadete / Identificación</th>
                             <th class="p-5 text-center">Curso / UR</th>
                             <th class="p-5">Salud / Sangre</th>
-                            <th class="p-5">Estado</th>
+                            <th class="p-5">Estado Datos</th>
                             <th class="p-5 text-right">Acciones</th>
                         </tr>
                     </thead>
@@ -155,7 +189,7 @@
                 </table>
             </div>
             <div class="p-5 border-t border-slate-100 bg-white flex justify-between items-center">
-                <span id="pagination-info" class="text-xs font-semibold text-slate-500 italic">Procesando registros...</span>
+                <span id="pagination-info" class="text-xs font-semibold text-slate-500 italic">Orden A-Z habilitado</span>
                 <div class="flex gap-2">
                     <button onclick="prevPage()" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition active:scale-95"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
                     <button onclick="nextPage()" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition active:scale-95"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
@@ -166,133 +200,79 @@
 
     <!-- MODALES -->
 
-    <!-- MODAL EDITAR -->
-    <div id="modal-edit" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print">
+    <div id="modal-edit" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print text-left">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col scale-in border-4 border-white">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <div>
-                    <h2 class="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight"><i data-lucide="user-edit" class="text-indigo-600"></i> Editor Legajo Integral</h2>
-                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">Corrección de datos seccionados</p>
+                    <h2 class="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight"><i data-lucide="user-edit" class="text-indigo-600"></i> Expediente Digital</h2>
+                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">Los cambios se guardan automáticamente en la nube</p>
                 </div>
                 <button onclick="closeModals()" class="p-2 hover:bg-slate-200 rounded-full transition text-slate-400"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <form id="form-edit" class="p-6 overflow-y-auto flex-1 custom-scrollbar">
-                <div id="edit-fields-container" class="space-y-8">
-                    <!-- Dynamic sections based on DATA_SECTIONS -->
-                </div>
+                <div id="edit-fields-container" class="space-y-8"></div>
                 <div class="flex justify-end gap-3 mt-8 pt-6 border-t bg-white sticky bottom-0 z-10 shadow-[0_-10px_20px_rgba(255,255,255,0.8)]">
-                    <button type="button" onclick="closeModals()" class="px-6 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition">CANCELAR</button>
-                    <button type="submit" class="px-10 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 shadow-lg transition active:scale-95">GUARDAR CAMBIOS</button>
+                    <button type="button" onclick="closeModals()" class="px-6 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition uppercase text-xs">Cerrar</button>
+                    <button type="submit" class="px-10 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 shadow-lg transition active:scale-95 uppercase text-xs">Guardar Cambios</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL REPORTE INDIVIDUAL -->
     <div id="modal-print-individual" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col scale-in border-2 border-slate-200">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col scale-in">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-800 text-white no-print">
-                <h2 class="text-xl font-bold tracking-tight">PREVISUALIZACIÓN DE LEGAJO</h2>
+                <h2 class="text-xl font-bold uppercase tracking-widest">Vista de Impresión</h2>
                 <div class="flex gap-2">
-                    <button onclick="window.print()" class="px-5 py-2 bg-emerald-500 text-white rounded-lg font-black flex items-center gap-2 hover:bg-emerald-600 transition shadow-sm">
-                        <i data-lucide="printer" class="w-4 h-4"></i> IMPRIMIR
-                    </button>
+                    <button onclick="window.print()" class="px-6 py-2 bg-emerald-500 text-white rounded-xl font-black flex items-center gap-2 shadow-lg hover:bg-emerald-600 transition"><i data-lucide="printer" class="w-4 h-4"></i> IMPRIMIR</button>
                     <button onclick="closeModals()" class="p-2 hover:bg-slate-700 rounded-full text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
                 </div>
             </div>
-            <div id="print-individual-content" class="p-10 overflow-y-auto flex-1 bg-white print-only">
-                <!-- Se llena con JS -->
-            </div>
+            <div id="print-individual-content" class="p-10 overflow-y-auto flex-1 bg-white print-only text-slate-900"></div>
         </div>
     </div>
 
-    <!-- MODAL LISTADO PERSONALIZADO -->
-    <div id="modal-custom-list" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print">
+    <div id="modal-custom-list" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print text-left">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col scale-in">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-900 text-white">
-                <div>
-                    <h2 class="text-xl font-black">REPORTE DINÁMICO POR COLUMNAS</h2>
-                    <p class="text-xs text-indigo-300 font-bold uppercase tracking-widest">Selecciona los campos para exportar o imprimir</p>
-                </div>
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-900 text-white uppercase font-black tracking-widest">
+                <h2 class="text-lg">Generador de Informes por Columnas</h2>
                 <button onclick="closeModals()" class="p-2 hover:bg-indigo-800 rounded-full text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <div class="p-6 overflow-y-auto flex-1 custom-scrollbar">
-                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 mb-8">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest text-xs">Selector de Datos (Limpie si desea empezar de cero)</h3>
-                        <div class="flex gap-4">
-                            <button onclick="selectAllColumns(true)" class="text-[10px] font-black text-indigo-600 hover:underline tracking-widest">SELECCIONAR TODO</button>
-                            <button onclick="selectAllColumns(false)" class="text-[10px] font-black text-slate-400 hover:underline tracking-widest">LIMPIAR TODO</button>
-                        </div>
-                    </div>
-                    <div id="column-selector" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                        <!-- Filled by JS -->
-                    </div>
+                <div id="column-selector" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 bg-slate-50 p-4 rounded-xl border mb-6"></div>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-black text-lg text-slate-900">Vista Previa</h3>
+                    <button onclick="printCustomList()" class="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition"><i data-lucide="printer" class="w-4 h-4 inline mr-2"></i> Generar Reporte</button>
                 </div>
-                
-                <div class="border-t pt-8">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-black text-lg text-slate-900">Vista Previa</h3>
-                        <button onclick="printCustomList()" class="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black text-sm uppercase tracking-wider shadow-lg hover:bg-indigo-700 active:scale-95 transition">
-                            <i data-lucide="printer" class="w-4 h-4 inline mr-2"></i> GENERAR DOCUMENTO TIPO TABLA
-                        </button>
-                    </div>
-                    <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white" id="custom-list-preview"></div>
-                </div>
+                <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white" id="custom-list-preview"></div>
             </div>
         </div>
     </div>
 
-    <!-- SCRIPTS -->
-    <script>
-        const SHEET_URLS = {
-            '1er Año': '', 
-            '2do Año': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTfvg2ERSB37qlvKd6DEhVNKNvP81J2_YrWncIfifrRcl5VdKnprhxOhJqqGfxLXg/pub?output=csv', 
-            '3er Año': ''  
-        };
+    <div id="modal-add" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print text-left">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden scale-in">
+            <div class="p-6 border-b bg-emerald-600 text-white uppercase font-black tracking-widest"><h2 class="text-lg">Alta de Nuevo Cadete</h2></div>
+            <form id="form-add" class="p-8 space-y-4">
+                <input type="text" name="Apellido" required placeholder="Apellido" class="w-full border p-4 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 uppercase font-bold text-sm">
+                <input type="text" name="Nombre" required placeholder="Nombre" class="w-full border p-4 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 uppercase font-bold text-sm">
+                <input type="text" name="DNI" required placeholder="DNI" class="w-full border p-4 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+                <select name="Año" class="w-full border p-4 rounded-xl outline-none text-sm font-bold uppercase"><option value="1er Año">1er Año</option><option value="2do Año">2do Año</option><option value="3er Año">3er Año</option></select>
+                <div class="flex justify-end gap-3 mt-8"><button type="submit" class="px-10 py-4 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 active:scale-95 transition">REGISTRAR EN NUBE</button></div>
+            </form>
+        </div>
+    </div>
 
-        // SECCIONES DE DATOS ORGANIZADAS PARA COINCIDIR CON EXCEL (CON NORMALIZACIÓN DE ESPACIOS)
+    <!-- LÓGICA PRINCIPAL -->
+    <script>
+        // CONFIGURACIÓN DE CATEGORÍAS (NORMALIZACIÓN DE TÍTULOS)
         const DATA_SECTIONS = [
-            {
-                name: 'Identificación y Legajo Personal',
-                fields: ['Apellido', 'Nombre', 'DNI', 'CUIL', 'Legajo', 'Prontuario', 'Año', 'Sexo', 'Fecha Nac', 'Edad', 'Est. Civil', 'UR', 'RELIGIÓN'],
-                color: 'indigo'
-            },
-            {
-                name: 'Ubicación y Jurisdicción Actual',
-                fields: ['Domicilio', 'Localidad', 'Departamento', 'Comisaria', 'DOMICILIO REAL (Lugar donde vive)', 'LOCALIDAD3', 'COMISARIA JURISDICCIONAL (Comisaría a la que corresponde según donde vive)'],
-                color: 'cyan'
-            },
-            {
-                name: 'Salud, Biotipo y Grupo Sanguíneo',
-                fields: ['Grupo Sangre', 'Estatura', 'Peso', 'IMC', 'Estado IMC', 'Enfermedades', 'Traumas', 'Relato Lesion', 'Ant Familiares'],
-                color: 'rose'
-            },
-            {
-                name: 'Datos del Padre (Fijos)',
-                fields: ['APELLIDO Y NOMBRE DE PADRE (Contestar solo si posee)', 'N° DNI DE PADRE (Contestar solo si posee)', 'VIVE SU PADRE (Contestar solo si posee)', 'FECHA DE NACIMIENTO DE PADRE (Contestar solo si posee)', 'NACIONALIDAD DE PADRE (Contestar solo si posee)', 'N° TELEFONO FIJO DE PADRE(Contestar solo si posee)', 'DOMICILIO DE PADRE (Contestar solo si posee)', 'LOCALIDAD DE PADRE (Contestar solo si posee)', 'PROFESION DE PADRE (Contestar solo si posee)', 'OCUPACION DE PADRE (Contestar solo si posee)'],
-                color: 'slate'
-            },
-            {
-                name: 'Datos de la Madre (Fijos)',
-                fields: ['APELLIDO Y NOMBRE DE MADRE (Contestar solo si posee)', 'N° DNI DE MADRE (Contestar solo si posee)', 'VIVE SU MADRE (Contestar solo si posee)', 'FECHA DE NACIMIENTO DE MADRE (Contestar solo si posee)', 'NACIONALIDAD DE MADRE (Contestar solo si posee)', 'N° TELEFONO FIJO DE MADRE(Contestar solo si posee)', 'DOMICILIO DE MADRE (Contestar solo si posee)', 'LOCALIDAD DE MADRE (Contestar solo si posee)', 'PROFESION DE MADRE (Contestar solo si posee)', 'OCUPACION DE MADRE (Contestar solo si posee)'],
-                color: 'rose'
-            },
-            {
-                name: 'Entorno de Vivienda Familiar',
-                fields: ['Hermanos', 'ALQUILA', 'VIVE EN DOMICILIO DE UN FAMILIAR?', 'DOMICILIO DE UN FAMILIAR ( Contestar solo si vive en un domicilio de algún familiar)', 'COMISARIA JURISDICCIONAL DONDE VIVE ALGUN FAMILIAR ( Contestar solo si vive en un domicilio de algún familiar)'],
-                color: 'orange'
-            },
-            {
-                name: 'Contacto y Comunicación',
-                fields: ['Celular', 'N° TELÉFONO (Uso Personal)', 'CORREO ELECTRONICO', 'Instagram', 'Facebook', 'Tik Tok'],
-                color: 'blue'
-            },
-            {
-                name: 'Armamento y Formación Policial',
-                fields: ['Jerarquia', 'Arma Marca', 'Arma Serie', 'Niv Academico', 'Titulo', 'TÍTULO SECUNDARIO(Nombre de Título)', 'NOMBRE DE INSTITUCION QUE EMITE EL TÍTULO SECUNDARIO(Nombre de Título)'],
-                color: 'emerald'
-            }
+            { name: 'Identificación y Legajo', fields: ['Apellido', 'Nombre', 'DNI', 'CUIL', 'Legajo', 'Prontuario', 'Año', 'Sexo', 'Fecha Nac', 'Edad', 'Est. Civil', 'UR', 'RELIGIÓN'], color: 'indigo' },
+            { name: 'Jurisdicción y Domicilio', fields: ['Domicilio', 'Localidad', 'Departamento', 'Comisaria', 'DOMICILIO REAL (Lugar donde vive)', 'LOCALIDAD3', 'COMISARIA JURISDICCIONAL (Comisaría a la que corresponde según donde vive)'], color: 'cyan' },
+            { name: 'Salud y Biotipo', fields: ['Grupo Sangre', 'Grupo Sanguineo', 'Estatura', 'Peso', 'IMC', 'Estado IMC', 'Enfermedades', 'Traumas', 'Relato Lesion', 'Ant Familiares'], color: 'rose' },
+            { name: 'Datos de los Padres', fields: ['APELLIDO Y NOMBRE DE PADRE (Contestar solo si posee)', 'N° DNI DE PADRE (Contestar solo si posee)', 'VIVE SU PADRE (Contestar solo si posee)', 'PROFESION DE PADRE (Contestar solo si posee)', 'APELLIDO Y NOMBRE DE MADRE (Contestar solo si posee)', 'N° DNI DE MADRE (Contestar solo si posee)', 'VIVE SU MADRE (Contestar solo si posee)', 'PROFESION DE MADRE (Contestar solo si posee)'], color: 'slate' },
+            { name: 'Contacto y Redes', fields: ['Celular', 'CORREO ELECTRONICO', 'Instagram', 'Facebook', 'Tik Tok'], color: 'blue' },
+            { name: 'Vivienda y Entorno', fields: ['Hermanos', 'ALQUILA', 'VIVE EN DOMICILIO DE UN FAMILIAR?', 'DOMICILIO DE UN FAMILIAR ( Contestar solo si vive en un domicilio de algún familiar)'], color: 'orange' },
+            { name: 'Servicio y Armamento', fields: ['Jerarquia', 'Arma Marca', 'Arma Serie', 'Act Fisica', 'Tabaco', 'Alcohol'], color: 'emerald' }
         ];
 
         let students = [];
@@ -301,50 +281,51 @@
         let showIncompleteOnly = false;
         let currentPage = 1;
         const itemsPerPage = 12;
-        let editingId = null;
         let allHeaders = [];
 
-        // --- MOTOR DE NORMALIZACIÓN INTELIGENTE ---
-        // Limpia el texto de espacios extra, paréntesis y acentos para facilitar la búsqueda
+        // --- MOTOR DE NORMALIZACIÓN MEJORADO ---
         function smartNorm(str) {
             if (!str) return '';
             return str.trim()
                 .toLowerCase()
-                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quitar acentos
-                .replace(/\s+/g, ' ')                             // Espacios únicos
-                .replace(/[()]/g, '');                            // Quitar paréntesis
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
+                .replace(/\s+/g, ' ')                             
+                .replace(/[()]/g, '')
+                .replace(/[.?]/g, '');
         }
 
-        // Función para formatear fechas de Excel/CSV y limpiar "ceros"
         function formatVal(val) {
-            if (!val) return '---';
+            if (!val || val === '0' || val === '00:00:00' || val === 'no' || val === 'NO' || val === '-') return '---';
             let s = String(val).trim();
-            // Detectar formato AAAA-MM-DD 00:00:00 común en Sheets/Excel
             if (s.match(/^\d{4}-\d{2}-\d{2}/)) {
                 let parts = s.split(' ')[0].split('-');
                 return `${parts[2]}/${parts[1]}/${parts[0]}`;
             }
-            if (s === '00:00:00' || s === '0' || s === 'no' || s === 'NO') return '---';
             return s.toUpperCase();
         }
 
-        // Busca el valor de un campo usando lógica de normalización
+        // Obtiene el valor real buscando por el nombre normalizado del campo
         function getSmartValue(student, fieldName) {
             const normSearch = smartNorm(fieldName);
-            // Intentar encontrar el valor comparando el nombre del campo normalizado
             const key = Object.keys(student).find(k => smartNorm(k) === normSearch);
             return key ? student[key] : '';
         }
 
-        function initIcons() { if (window.lucide) lucide.createIcons(); }
-
-        async function fetchFromSheets() {
+        // --- CARGA DE DATOS ---
+        window.fetchFromSheets = async () => {
             const btn = document.getElementById('refresh-icon');
             const statusEl = document.getElementById('sync-status');
             if (btn) btn.classList.add('animate-spin');
             
             let allData = [];
+            const SHEET_URLS = {
+                '1er Año': '', 
+                '2do Año': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTfvg2ERSB37qlvKd6DEhVNKNvP81J2_YrWncIfifrRcl5VdKnprhxOhJqqGfxLXg/pub?output=csv', 
+                '3er Año': ''  
+            };
+
             try {
+                const cloudMods = await window.getCloudData();
                 for (const [year, url] of Object.entries(SHEET_URLS)) {
                     if (!url || !url.startsWith('http')) continue;
                     const response = await fetch(url);
@@ -352,39 +333,46 @@
                     const parsed = parseCSV(text, year);
                     allData = [...allData, ...parsed];
                 }
-                if (allData.length > 0) students = allData;
-                if (statusEl) statusEl.innerHTML = `<span class="text-emerald-600 font-black text-[10px]">VINCULACIÓN INTELIGENTE ACTIVA: ${new Date().toLocaleTimeString()}</span>`;
+
+                if (allData.length > 0) {
+                    students = allData.map(s => {
+                        const cloudKey = s.DNI || s.id;
+                        return cloudMods[cloudKey] ? { ...s, ...cloudMods[cloudKey] } : s;
+                    });
+                } else if (Object.keys(cloudMods).length > 0) {
+                    students = Object.values(cloudMods);
+                }
+                
+                if (statusEl) statusEl.innerHTML = `<span class="text-emerald-600 font-black text-[10px]">VINCULACIÓN INTELIGENTE ACTIVADA: ${new Date().toLocaleTimeString()}</span>`;
                 render();
             } catch (e) {
-                if (statusEl) statusEl.innerHTML = `<span class="text-rose-500 font-bold italic text-[10px]">ERROR DE CARGA</span>`;
+                if (statusEl) statusEl.innerHTML = `<span class="text-rose-500 font-bold text-[10px]">REINTENTANDO VINCULACIÓN...</span>`;
             } finally {
                 if (btn) btn.classList.remove('animate-spin');
-                initIcons();
+                lucide.createIcons();
             }
         }
 
+        // --- PARSER ROBUSTO (CORRIGE DESPLAZAMIENTOS) ---
         function parseCSV(text, yearLabel) {
             const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
             if (lines.length < 2) return [];
             
             const firstLine = lines[0];
             const rawHeaders = firstLine.split(',').map(h => h.trim().replace(/"/g, ''));
-            
-            // Guardar headers globales únicos para el generador de reportes
             rawHeaders.forEach(h => { if(!allHeaders.includes(h)) allHeaders.push(h); });
 
-            const dataRows = lines.slice(1).map(row => {
-                return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
-            }).filter(r => r.length > 1 && r[0] !== "");
+            return lines.slice(1).map(row => {
+                // Regex avanzado que ignora comas dentro de comillas
+                const values = row.match(/(".*?"|[^",\r\n]*)(?=\s*,|\s*\r?\n|$)|(?<=,|^)(?=\s*,|\s*\r?\n|$)/g)
+                                  .filter((v, i) => i % 2 === 0) // El match de JS a veces duplica posiciones
+                                  .map(v => v.trim().replace(/"/g, ''));
 
-            return dataRows.map(row => {
                 const obj = {};
                 rawHeaders.forEach((h, i) => {
-                    // Unificar automáticamente Grupo Sanguineo y Grupo Sangre
                     let key = h;
-                    const hNorm = smartNorm(h);
-                    if (hNorm === 'grupo sanguineo' || hNorm === 'factor sangre') key = 'Grupo Sangre';
-                    obj[key] = row[i] || '';
+                    if (smartNorm(h) === 'grupo sanguineo') key = 'Grupo Sangre';
+                    obj[key] = values[i] || '';
                 });
                 obj.id = Math.random().toString(36).substr(2, 9);
                 if (yearLabel && (!obj['Año'] || obj['Año'] === '')) obj['Año'] = yearLabel;
@@ -392,32 +380,26 @@
             });
         }
 
-        const criticalFields = ['Apellido', 'Nombre', 'DNI', 'CUIL', 'Celular', 'LOCALIDAD3', 'Grupo Sangre'];
-
-        function getCompleteness(student) {
-            const completed = criticalFields.filter(f => {
-                const val = getSmartValue(student, f);
-                return val && String(val).trim() !== '' && val !== '-' && val !== '0' && val !== 'NO' && val !== '00:00:00';
-            }).length;
-            return (completed / criticalFields.length) * 100;
+        function sortList(list) {
+            return list.sort((a, b) => {
+                const ap1 = (a.Apellido || '').trim();
+                const ap2 = (b.Apellido || '').trim();
+                return ap1.localeCompare(ap2, 'es', { sensitivity: 'base' });
+            });
         }
 
-        function render() {
-            const filtered = students.filter(s => {
-                const searchStr = `${s.Nombre} ${s.Apellido} ${s.DNI} ${getSmartValue(s, 'Prontuario')} ${getSmartValue(s, 'LOCALIDAD3')}`.toLowerCase();
+        window.render = () => {
+            let filtered = students.filter(s => {
+                const searchStr = `${s.Nombre} ${s.Apellido} ${s.DNI} ${getSmartValue(s, 'Prontuario')}`.toLowerCase();
                 const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
                 const matchesYear = filterYear === 'Todos' || (s['Año'] && s['Año'].includes(filterYear.split(' ')[0]));
-                const isMissing = showIncompleteOnly ? getCompleteness(s) < 100 : true;
+                const isMissing = showIncompleteOnly ? (getCompleteness(s) < 100) : true;
                 return matchesSearch && matchesYear && isMissing;
             });
 
-            // Ordenar alfabéticamente por Apellido y Nombre
-            filtered.sort((a, b) => {
-                const lastNameComp = (a.Apellido || '').localeCompare(b.Apellido || '', 'es', { sensitivity: 'base' });
-                if (lastNameComp !== 0) return lastNameComp;
-                return (a.Nombre || '').localeCompare(b.Nombre || '', 'es', { sensitivity: 'base' });
-            });
+            filtered = sortList(filtered);
 
+            // UI Stats
             document.getElementById('stat-total').innerText = students.length;
             document.getElementById('stat-1er').innerText = students.filter(s => s['Año']?.includes('1')).length;
             document.getElementById('stat-2do').innerText = students.filter(s => s['Año']?.includes('2')).length;
@@ -435,235 +417,106 @@
                     const yearClass = s['Año']?.includes('1') ? 'bg-blue-100 text-blue-700 border-blue-200' : s['Año']?.includes('2') ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-violet-100 text-violet-700 border-violet-200';
                     
                     return `
-                        <tr class="hover:bg-slate-50 group border-b border-slate-50 transition-colors">
-                            <td class="p-5">
-                                <div class="font-bold text-slate-900 uppercase text-xs">${s.Apellido || 'S/A'}, ${s.Nombre || 'S/N'}</div>
-                                <div class="text-[10px] text-slate-400 mt-1 font-mono tracking-tighter">DNI: ${s.DNI || '---'} | Pront: ${getSmartValue(s, 'Prontuario') || '---'}</div>
-                            </td>
-                            <td class="p-5 text-center">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-black border ${yearClass}">${s['Año'] || 'S/D'}</span>
-                                <div class="text-[9px] text-slate-400 font-bold mt-1 uppercase">${getSmartValue(s, 'UR') || ''}</div>
-                            </td>
-                            <td class="p-5">
-                                <div class="flex items-center gap-2">
-                                    <span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded text-[10px] font-black border border-rose-100">${getSmartValue(s, 'Grupo Sangre') || '---'}</span>
-                                    <span class="text-[10px] text-slate-400 italic">${getSmartValue(s, 'Edad') || '?'} años</span>
-                                </div>
-                            </td>
-                            <td class="p-5 min-w-[120px]">
-                                <div class="flex items-center gap-2">
-                                    <div class="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-50 shadow-inner">
-                                        <div class="h-full ${colorClass} transition-all duration-700" style="width: ${comp}%"></div>
-                                    </div>
-                                    <span class="text-[10px] font-black text-slate-500 w-8 text-right">${Math.round(comp)}%</span>
-                                </div>
-                            </td>
-                            <td class="p-5 text-right opacity-0 group-hover:opacity-100 transition-all">
-                                <div class="flex justify-end gap-1">
-                                    <button onclick="openPrintIndividualModal('${s.id}')" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition" title="Legajo Imprimible"><i data-lucide="printer" class="w-4 h-4"></i></button>
-                                    <button onclick="openEditModal('${s.id}')" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Editar"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                                    <button onclick="deleteStudent('${s.id}')" class="p-2 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                </div>
-                            </td>
+                        <tr class="hover:bg-slate-50 group border-b border-slate-50">
+                            <td class="p-5"><div class="font-black text-slate-900 uppercase text-[11px]">${s.Apellido || 'S/A'}, ${s.Nombre || 'S/N'}</div><div class="text-[9px] text-slate-400 font-mono italic">DNI: ${s.DNI || '---'}</div></td>
+                            <td class="p-5 text-center"><span class="px-2 py-0.5 rounded text-[9px] font-black border ${yearClass}">${s['Año'] || 'S/D'}</span><div class="text-[8px] text-slate-400 font-bold mt-1">${getSmartValue(s, 'UR')}</div></td>
+                            <td class="p-5 text-center"><span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded text-[10px] font-black border border-rose-100">${getSmartValue(s, 'Grupo Sangre')}</span></td>
+                            <td class="p-5 min-w-[120px]"><div class="flex items-center gap-2"><div class="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden border"><div class="h-full ${colorClass}" style="width: ${comp}%"></div></div><span class="text-[10px] font-black text-slate-500">${Math.round(comp)}%</span></div></td>
+                            <td class="p-5 text-right opacity-0 group-hover:opacity-100 transition-all"><div class="flex justify-end gap-1"><button onclick="openPrintIndividualModal('${s.id}')" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i data-lucide="printer" class="w-4 h-4"></i></button><button onclick="openEditModal('${s.id}')" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button></div></td>
                         </tr>`;
                 }).join('');
             }
-            const elPag = document.getElementById('pagination-info');
-            if (elPag) elPag.innerText = `Mostrando ${filtered.length} resultados`;
-            initIcons();
+            lucide.createIcons();
         }
 
-        // --- REPORTE INDIVIDUAL INTEGRAL (CON BÚSQUEDA INTELIGENTE) ---
-        function openPrintIndividualModal(id) {
+        const critFields = ['Apellido', 'Nombre', 'DNI', 'CUIL', 'Celular', 'LOCALIDAD3', 'Grupo Sangre'];
+        function getCompleteness(student) {
+            const completed = critFields.filter(f => {
+                const val = getSmartValue(student, f);
+                return val && String(val).trim() !== '' && val !== '---';
+            }).length;
+            return (completed / critFields.length) * 100;
+        }
+
+        // --- MODALES E INFORMES ---
+
+        window.openPrintIndividualModal = (id) => {
             const s = students.find(x => x.id === id);
             if (!s) return;
             const content = document.getElementById('print-individual-content');
-            
             let sectionsHtml = "";
-            let keysProcessed = new Set(['id']);
-
             DATA_SECTIONS.forEach(section => {
-                // Buscamos campos que coincidan con la sección
                 let fieldsToShow = [];
                 section.fields.forEach(f => {
-                    const studentKey = Object.keys(s).find(k => smartNorm(k) === smartNorm(f));
-                    if (studentKey) {
-                        fieldsToShow.push({ label: f, value: s[studentKey] });
-                        keysProcessed.add(studentKey);
-                    }
+                    const val = getSmartValue(s, f);
+                    if (val) fieldsToShow.push({ label: f, value: val });
                 });
-
                 if (fieldsToShow.length > 0) {
-                    sectionsHtml += `
-                    <div class="mb-5 break-inside-avoid">
-                        <h3 class="bg-slate-900 text-white px-3 py-1 text-[10px] font-black uppercase tracking-widest border-b-2 border-slate-900 mb-3">${section.name}</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-[10px]">
-                            ${fieldsToShow.map(f => `
-                                <div class="border-b border-slate-50 pb-0.5">
-                                    <p class="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">${f.label}</p>
-                                    <p class="text-slate-900 font-bold uppercase truncate text-[9px]">${formatVal(f.value)}</p>
-                                </div>`).join('')}
-                        </div>
-                    </div>`;
+                    sectionsHtml += `<div class="mb-6 break-inside-avoid"><h3 class="bg-slate-900 text-white px-3 py-1 text-[10px] font-black uppercase tracking-widest border-b-2 border-slate-900 mb-3">${section.name}</h3><div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-[10px]">${fieldsToShow.map(f => `<div class="border-b border-slate-50 pb-0.5"><p class="text-[7px] font-black text-slate-400 uppercase mb-0.5">${f.label}</p><p class="text-slate-900 font-bold uppercase truncate">${formatVal(f.value)}</p></div>`).join('')}</div></div>`;
                 }
             });
 
-            content.innerHTML = `
-                <div class="p-2 border-[12px] border-double border-slate-900 bg-white relative">
-                    <div class="flex justify-between items-start mb-8 border-b-4 border-slate-900 pb-4">
-                        <div>
-                            <h1 class="text-4xl font-black uppercase tracking-tighter text-slate-900 leading-none">LEGAJO PERSONAL</h1>
-                            <p class="text-[10px] font-black text-indigo-700 mt-2 uppercase tracking-widest">DIVISIÓN CAPACITACIÓN Y RECLUTAMIENTO</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-xl font-black text-slate-900 uppercase">${s.Apellido}, ${s.Nombre}</p>
-                            <p class="text-[10px] font-mono font-black text-slate-500 mt-1 uppercase tracking-tight italic">DNI: ${s.DNI || '---'} | PRONTUARIO: ${getSmartValue(s, 'Prontuario') || '---'}</p>
-                            <p class="text-[8px] text-slate-400 mt-1 font-bold uppercase tracking-widest italic">FECHA EMISIÓN: ${new Date().toLocaleDateString()}</p>
-                        </div>
-                    </div>
-                    
-                    ${sectionsHtml}
-
-                    <div class="mt-16 flex justify-around items-center">
-                        <div class="border-t-2 border-slate-400 w-48 text-center pt-2">
-                            <p class="text-[8px] font-black uppercase text-slate-900">Firma del Titular</p>
-                        </div>
-                        <div class="border-t-2 border-slate-400 w-48 text-center pt-2">
-                            <p class="text-[8px] font-black uppercase text-slate-900">Sello de Dependencia</p>
-                        </div>
-                    </div>
-                </div>
-            `;
+            content.innerHTML = `<div class="p-2 border-[12px] border-double border-slate-900 bg-white">
+                <div class="flex justify-between items-start mb-8 border-b-4 border-slate-900 pb-4">
+                    <div><h1 class="text-4xl font-black uppercase tracking-tighter text-slate-900 leading-none">LEGAJO PERSONAL</h1><p class="text-[10px] font-black text-indigo-700 mt-2 uppercase tracking-widest">SISTEMA ROL DE COMBATE</p></div>
+                    <div class="text-right font-black uppercase"><p class="text-xl">${s.Apellido}, ${s.Nombre}</p><p class="text-[10px] text-slate-500">DNI: ${s.DNI || '---'}</p></div>
+                </div>${sectionsHtml}
+                <div class="mt-16 flex justify-around"><div class="border-t-2 border-slate-400 w-48 text-center pt-2 font-black uppercase text-[8px]">Firma Titular</div><div class="border-t-2 border-slate-400 w-48 text-center pt-2 font-black uppercase text-[8px]">Sello Autoridad</div></div></div>`;
             document.getElementById('modal-print-individual').classList.add('active');
-            initIcons();
         }
 
-        // --- EDICIÓN POR BLOQUES ---
-        function openEditModal(id) {
+        window.openEditModal = (id) => {
             const s = students.find(x => x.id === id);
             if (!s) return;
             editingId = id;
             const container = document.getElementById('edit-fields-container');
-            
             let sectionsHtml = "";
-            let keysProcessed = new Set(['id']);
-
             DATA_SECTIONS.forEach(section => {
                 let sectionFields = [];
                 section.fields.forEach(f => {
                     const studentKey = Object.keys(s).find(k => smartNorm(k) === smartNorm(f));
-                    if (studentKey) {
-                        sectionFields.push({ key: studentKey, label: f });
-                        keysProcessed.add(studentKey);
-                    }
+                    if (studentKey) sectionFields.push({ key: studentKey, label: f });
                 });
-
                 if (sectionFields.length > 0) {
-                    sectionsHtml += `
-                    <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-${section.color}-300">
-                        <div class="flex items-center gap-3 mb-6 border-b border-${section.color}-100 pb-3">
-                            <span class="w-4 h-4 rounded-full bg-${section.color}-500 shadow-lg"></span>
-                            <h3 class="font-black text-xs text-slate-700 uppercase tracking-widest">${section.name}</h3>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                            ${sectionFields.map(f => `
-                                <div>
-                                    <label class="block text-[9px] font-black uppercase mb-1 text-slate-400 tracking-wider ml-1">${f.label}</label>
-                                    <input type="text" name="${f.key}" value="${s[f.key]}" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-xs outline-none focus:ring-4 focus:ring-${section.color}-500/10 focus:border-${section.color}-500 transition-all font-bold uppercase shadow-inner">
-                                </div>`).join('')}
-                        </div>
-                    </div>`;
+                    sectionsHtml += `<div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-${section.color}-300"><div class="flex items-center gap-3 mb-6 border-b border-${section.color}-100 pb-3"><span class="w-4 h-4 rounded-full bg-${section.color}-500"></span><h3 class="font-black text-xs text-slate-700 uppercase tracking-widest">${section.name}</h3></div><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">${sectionFields.map(f => `<div><label class="block text-[9px] font-black uppercase mb-1 text-slate-400 tracking-wider">${f.label}</label><input type="text" name="${f.key}" value="${s[f.key]}" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-xs outline-none focus:ring-4 focus:ring-${section.color}-500/10 focus:border-${section.color}-500 transition-all font-bold uppercase text-slate-700"></div>`).join('')}</div></div>`;
                 }
             });
-
             container.innerHTML = sectionsHtml;
             document.getElementById('modal-edit').classList.add('active');
-            initIcons();
+            lucide.createIcons();
         }
 
-        // --- LISTADO PERSONALIZADO ---
-        function openCustomListModal() {
+        window.closeModals = () => { document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); }
+
+        window.openCustomListModal = () => {
             const selector = document.getElementById('column-selector');
-            const defaultCols = ['Apellido', 'Nombre', 'DNI', 'Legajo', 'Prontuario', 'Grupo Sangre', 'UR', 'Año', 'Celular'];
-            
-            selector.innerHTML = allHeaders.map(h => `
-                <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white cursor-pointer border border-transparent hover:border-slate-100 transition shadow-sm bg-slate-50/50">
-                    <input type="checkbox" value="${h}" ${defaultCols.includes(h) ? 'checked' : ''} onchange="updateCustomListPreview()" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
-                    <span class="text-[9px] truncate text-slate-600 font-black uppercase tracking-tight">${h}</span>
-                </label>
-            `).join('');
-            
+            const defaultCols = ['Apellido', 'Nombre', 'DNI', 'Grupo Sangre', 'Año', 'Celular'];
+            selector.innerHTML = allHeaders.map(h => `<label class="flex items-center gap-3 p-2 rounded-xl hover:bg-white cursor-pointer transition shadow-sm bg-white/50 border"><input type="checkbox" value="${h}" ${defaultCols.includes(h) ? 'checked' : ''} onchange="updateCustomListPreview()" class="w-4 h-4 text-indigo-600 rounded"><span class="text-[9px] truncate text-slate-600 font-black uppercase">${h}</span></label>`).join('');
             updateCustomListPreview();
             document.getElementById('modal-custom-list').classList.add('active');
-            initIcons();
         }
 
-        function updateCustomListPreview() {
+        window.updateCustomListPreview = () => {
             const selectedCols = Array.from(document.querySelectorAll('#column-selector input:checked')).map(cb => cb.value);
             const container = document.getElementById('custom-list-preview');
-            const previewData = students.slice(0, 10);
-
-            if (selectedCols.length === 0) {
-                container.innerHTML = `<div class="p-20 text-center text-slate-400 italic font-bold">DEBE SELECCIONAR AL MENOS UN CAMPO</div>`;
-                return;
-            }
-
-            let html = `<table class="w-full text-left border-collapse text-[9px] table-auto">
-                <thead class="bg-indigo-950 text-white font-black uppercase tracking-widest sticky top-0">
-                    <tr>${selectedCols.map(c => `<th class="p-3 border-r border-indigo-900 whitespace-nowrap">${c}</th>`).join('')}</tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    ${previewData.map(s => `<tr>${selectedCols.map(c => `<td class="p-3 border-r text-slate-600 font-bold uppercase truncate max-w-[150px]">${formatVal(s[c])}</td>`).join('')}</tr>`).join('')}
-                </tbody>
-            </table>`;
+            const previewData = sortList([...students]).slice(0, 10);
+            if (selectedCols.length === 0) { container.innerHTML = `<div class="p-20 text-center text-slate-400 italic font-bold">MARQUE LAS COLUMNAS PARA EL INFORME</div>`; return; }
+            let html = `<table class="w-full text-left border-collapse text-[9px] table-auto"><thead class="bg-indigo-950 text-white font-black uppercase tracking-widest sticky top-0"><tr>${selectedCols.map(c => `<th class="p-3 border-r border-indigo-900">${c}</th>`).join('')}</tr></thead><tbody class="divide-y divide-slate-100">${previewData.map(s => `<tr>${selectedCols.map(c => `<td class="p-3 border-r text-slate-600 font-bold uppercase truncate max-w-[150px]">${formatVal(s[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
             container.innerHTML = html;
         }
 
-        function selectAllColumns(state) {
-            document.querySelectorAll('#column-selector input').forEach(i => i.checked = state);
-            updateCustomListPreview();
-        }
+        window.selectAllColumns = (state) => { document.querySelectorAll('#column-selector input').forEach(i => i.checked = state); updateCustomListPreview(); }
 
-        function printCustomList() {
+        window.printCustomList = () => {
             const selectedCols = Array.from(document.querySelectorAll('#column-selector input:checked')).map(cb => cb.value);
-            if (selectedCols.length === 0) return;
             const printWin = window.open('', '_blank');
-            let table = `
-                <html><head><title>REPORTE ROL DE COMBATE</title>
-                <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-                    body { font-family: 'Inter', sans-serif; padding: 10px; color: #0f172a; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
-                    th, td { border: 1px solid #000; padding: 3px 5px; text-align: left; font-size: 6.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-                    th { background: #000; color: white; font-weight: 900; text-transform: uppercase; }
-                    h1 { font-size: 14px; margin: 0; text-transform: uppercase; font-weight: 900; }
-                    .header { border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
-                    @media print { @page { size: landscape; margin: 5mm; } }
-                </style></head><body>
-                <div class="header">
-                    <div>
-                        <h1>INFORME POR COLUMNAS - ROL DE COMBATE</h1>
-                        <p style="font-size: 6px; font-weight: 800; margin: 0; text-transform: uppercase;">División Capacitación - Legajos Integrales</p>
-                    </div>
-                    <div style="text-align: right; font-size: 6px; font-weight: 900;">
-                        REGISTROS: ${students.length} | FECHA: ${new Date().toLocaleString()}
-                    </div>
-                </div>
-                <table>
-                    <thead><tr>${selectedCols.map(c => `<th>${c}</th>`).join('')}</tr></thead>
-                    <tbody>${students.map(s => `<tr>${selectedCols.map(c => `<td>${formatVal(s[c])}</td>`).join('')}</tr>`).join('')}</tbody>
-                </table>
-                </body></html>`;
-            printWin.document.write(table);
-            printWin.document.close();
+            const sortedData = sortList([...students]);
+            let table = `<html><head><title>INFORME</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');body { font-family: 'Inter', sans-serif; padding: 10px; color: #000; }table { width: 100%; border-collapse: collapse; margin-top: 10px; }th, td { border: 1px solid #000; padding: 4px; text-align: left; font-size: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }th { background: #000; color: #fff; font-weight: 900; text-transform: uppercase; }h1 { font-size: 14px; margin: 0; font-weight: 900; }.header { border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end; }@media print { @page { size: landscape; margin: 5mm; } }</style></head><body><div class="header"><div><h1>INFORME POR COLUMNAS - ROL DE COMBATE</h1><p style="font-size: 6px; font-weight: 800; margin: 0;">DIVISIÓN CAPACITACIÓN</p></div><div style="text-align: right; font-size: 6px; font-weight: 900;">REGISTROS: ${students.length} | FECHA: ${new Date().toLocaleString()}</div></div><table><thead><tr>${selectedCols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${sortedData.map(s => `<tr>${selectedCols.map(c => `<td>${formatVal(s[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`;
+            printWin.document.write(table); printWin.document.close();
             setTimeout(() => { printWin.print(); printWin.close(); }, 500);
         }
 
-        // FUNCIONES ESTÁNDAR
-        function openAddModal() { document.getElementById('modal-add').classList.add('active'); }
-        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); editingId = null; }
-        function deleteStudent(id) { if (confirm("¿Eliminar del sistema temporal?")) { students = students.filter(s => s.id !== id); render(); } }
-
+        // --- EVENTOS ---
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('search-input')?.addEventListener('input', (e) => { searchTerm = e.target.value; render(); });
             document.getElementById('filter-year')?.addEventListener('change', (e) => { filterYear = e.target.value; render(); });
@@ -672,44 +525,43 @@
                 document.getElementById('toggle-incomplete').classList.toggle('bg-amber-100');
                 render(); 
             });
-            
-            document.getElementById('form-edit')?.addEventListener('submit', (e) => {
+            document.getElementById('form-edit')?.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const data = {};
                 new FormData(e.target).forEach((v, k) => data[k] = v);
-                students = students.map(s => s.id === editingId ? { ...s, ...data } : s);
+                await window.saveStudentToCloud(editingId, data);
                 closeModals();
-                render();
             });
-
+            document.getElementById('form-add')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const data = { id: Math.random().toString(36).substr(2, 9) };
+                new FormData(e.target).forEach((v, k) => data[k] = v);
+                await window.saveStudentToCloud(data.id, data);
+                students = [data, ...students];
+                closeModals();
+            });
             const csvInput = document.getElementById('csv-upload');
             if (csvInput) {
                 csvInput.addEventListener('change', (e) => {
                     const reader = new FileReader();
-                    reader.onload = (ev) => {
-                        students = [...parseCSV(ev.target.result, "Excel Local"), ...students];
-                        render();
-                        alert("Datos importados con éxito. La vinculación inteligente ha normalizado los campos.");
-                    };
+                    reader.onload = (ev) => { students = [...parseCSV(ev.target.result, "Excel Local"), ...students]; render(); };
                     reader.readAsText(e.target.files[0], 'ISO-8859-1');
                 });
             }
-            fetchFromSheets();
         });
 
-        function exportToCSV() {
+        window.exportToCSV = () => {
             if (students.length === 0) return;
             const headers = Object.keys(students[0]).filter(k => k !== 'id');
-            const csvRows = [headers.join(','), ...students.map(row => headers.map(h => `"${row[h] || ''}"`).join(','))];
+            const csvRows = [headers.join(','), ...sortList([...students]).map(row => headers.map(h => `"${row[h] || ''}"`).join(','))];
             const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=ISO-8859-1' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `ROL_VINCULADO_${new Date().toISOString().slice(0,10)}.csv`;
+            link.download = `ROL_COMBATE_${new Date().toISOString().slice(0,10)}.csv`;
             link.click();
         }
-        
-        function nextPage() { currentPage++; render(); }
-        function prevPage() { if (currentPage > 1) currentPage--; render(); }
+        window.nextPage = () => { currentPage++; render(); }
+        window.prevPage = () => { if (currentPage > 1) currentPage--; render(); }
     </script>
 </body>
 </html>
