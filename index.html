@@ -398,6 +398,13 @@
                 return matchesSearch && matchesYear && isMissing;
             });
 
+            // Ordenar alfabéticamente por Apellido y Nombre
+            filtered.sort((a, b) => {
+                const lastNameComp = (a.Apellido || '').localeCompare(b.Apellido || '', 'es', { sensitivity: 'base' });
+                if (lastNameComp !== 0) return lastNameComp;
+                return (a.Nombre || '').localeCompare(b.Nombre || '', 'es', { sensitivity: 'base' });
+            });
+
             document.getElementById('stat-total').innerText = students.length;
             document.getElementById('stat-1er').innerText = students.filter(s => s['Año']?.includes('1')).length;
             document.getElementById('stat-2do').innerText = students.filter(s => s['Año']?.includes('2')).length;
