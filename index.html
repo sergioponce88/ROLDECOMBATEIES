@@ -23,10 +23,10 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
 
-    <!-- APP CONTAINER -->
+    <!-- CONTENEDOR DE LA APP -->
     <div id="app" class="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
         
-        <!-- HEADER -->
+        <!-- CABECERA -->
         <header class="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div class="flex items-center gap-4">
                 <div class="bg-indigo-600 p-3 rounded-xl text-white shadow-lg shadow-indigo-200">
@@ -35,7 +35,7 @@
                 <div>
                     <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Sistema Rol de Combate</h1>
                     <div id="sync-status" class="flex items-center gap-2 text-sm text-slate-500">
-                        <span class="flex items-center gap-1 text-slate-400 italic">
+                        <span class="flex items-center gap-1 text-slate-400 italic text-xs">
                             <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> 
                             Iniciando conexión...
                         </span>
@@ -73,27 +73,31 @@
             </div>
         </header>
 
-        <!-- DASHBOARD STATS -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <!-- ESTADÍSTICAS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <p class="text-xs font-bold text-slate-400 uppercase mb-1">Total General</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Total General</p>
                 <p id="stat-total" class="text-3xl font-black text-slate-900">0</p>
             </div>
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <p class="text-xs font-bold text-blue-400 uppercase mb-1">1er Año</p>
+                <p class="text-[10px] font-bold text-blue-400 uppercase mb-1 tracking-wider">1er Año</p>
                 <p id="stat-1er" class="text-3xl font-black text-blue-600">0</p>
             </div>
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <p class="text-xs font-bold text-indigo-400 uppercase mb-1">2do Año</p>
+                <p class="text-[10px] font-bold text-indigo-400 uppercase mb-1 tracking-wider">2do Año</p>
                 <p id="stat-2do" class="text-3xl font-black text-indigo-600">0</p>
             </div>
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <p class="text-xs font-bold text-amber-500 uppercase mb-1">Datos Pendientes</p>
+                <p class="text-[10px] font-bold text-violet-400 uppercase mb-1 tracking-wider">3er Año</p>
+                <p id="stat-3er" class="text-3xl font-black text-violet-600">0</p>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-[10px] font-bold text-amber-500 uppercase mb-1 tracking-wider">Incompletos</p>
                 <p id="stat-incomplete" class="text-3xl font-black text-amber-600">0</p>
             </div>
         </div>
 
-        <!-- FILTERS -->
+        <!-- FILTROS -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
             <div class="lg:col-span-6 relative">
                 <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
@@ -126,7 +130,7 @@
             </div>
         </div>
 
-        <!-- TABLE -->
+        <!-- TABLA -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
@@ -145,7 +149,6 @@
                     </tbody>
                 </table>
             </div>
-            <!-- Paginación -->
             <div class="p-5 border-t border-slate-100 bg-white flex justify-between items-center">
                 <span id="pagination-info" class="text-xs font-medium text-slate-500 italic">Esperando sincronización...</span>
                 <div class="flex gap-2">
@@ -156,7 +159,7 @@
         </div>
     </div>
 
-    <!-- MODAL EDITAR -->
+    <!-- MODALES -->
     <div id="modal-edit" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col scale-in">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
@@ -167,9 +170,7 @@
                 <button onclick="closeModals()" class="p-2 hover:bg-slate-200 rounded-full transition"><i data-lucide="x" class="w-6 h-6 text-slate-400"></i></button>
             </div>
             <form id="form-edit" class="p-6 overflow-y-auto flex-1 custom-scrollbar">
-                <div id="edit-fields-container" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <!-- Campos generados dinámicamente -->
-                </div>
+                <div id="edit-fields-container" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
                 <div class="flex justify-end gap-3 mt-8 pt-6 border-t bg-white sticky bottom-0">
                     <button type="button" onclick="closeModals()" class="px-6 py-2.5 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl transition">Cancelar</button>
                     <button type="submit" class="px-8 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition">Guardar Cambios</button>
@@ -178,60 +179,39 @@
         </div>
     </div>
 
-    <!-- MODAL INFORME -->
     <div id="modal-report" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col scale-in">
             <div class="p-6 border-b border-amber-100 flex justify-between items-center bg-amber-50">
                 <div>
                     <h2 class="text-xl font-bold text-amber-900">Auditoría de Faltantes</h2>
-                    <p class="text-xs text-amber-700">Listado de información crítica pendiente de completar</p>
+                    <p class="text-xs text-amber-700">Información crítica pendiente</p>
                 </div>
                 <button onclick="closeModals()" class="p-2 hover:bg-amber-100 rounded-full transition"><i data-lucide="x" class="w-6 h-6 text-amber-800"></i></button>
             </div>
-            <div id="report-container" class="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4">
-                <!-- Reporte generado aquí -->
-            </div>
+            <div id="report-container" class="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4"></div>
             <div class="p-4 border-t bg-slate-50 flex justify-end">
-                <button onclick="window.print()" class="px-6 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold flex items-center gap-2">
-                    <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Reporte
-                </button>
+                <button onclick="window.print()" class="px-6 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i> Imprimir Reporte</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL AYUDA -->
     <div id="modal-help" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden scale-in">
-            <div class="p-6 border-b bg-indigo-50">
-                <h2 class="text-xl font-bold text-indigo-900">Configuración Cloud</h2>
-            </div>
+            <div class="p-6 border-b bg-indigo-50"><h2 class="text-xl font-bold text-indigo-900">Configuración Cloud</h2></div>
             <div class="p-6 space-y-4 text-sm leading-relaxed text-slate-600">
-                <div class="flex gap-3">
-                    <span class="bg-indigo-100 text-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">1</span>
-                    <p>En Google Sheets: <strong>Archivo > Compartir > Publicar en la web</strong>.</p>
-                </div>
-                <div class="flex gap-3">
-                    <span class="bg-indigo-100 text-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">2</span>
-                    <p>Elige la hoja y cambia "Página Web" por <strong>Valores separados por comas (.csv)</strong>.</p>
-                </div>
-                <div class="flex gap-3">
-                    <span class="bg-indigo-100 text-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">3</span>
-                    <p>Copia el link y pégalo en la sección <code>SHEET_URLS</code> del código.</p>
-                </div>
-                <div class="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg flex gap-3 text-blue-800 text-xs">
-                    <i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5"></i>
-                    <p>Si solo tienes un link para todos los años, ponlo solo en <strong>2do Año</strong> y el sistema cargará todo desde ahí.</p>
+                <p>1. En Google Sheets: <strong>Archivo > Compartir > Publicar en la web</strong>.</p>
+                <p>2. Elige la hoja (1°, 2° o 3° año) y cambia a <strong>Valores separados por comas (.csv)</strong>.</p>
+                <p>3. Pega el link en la sección <code>SHEET_URLS</code> del código para cada año.</p>
+                <div class="p-3 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-800">
+                    <strong>Nota:</strong> Si te aparecen menos registros de los esperados, asegúrate de que el link de 2do año no sea el único configurado.
                 </div>
             </div>
-            <div class="p-4 border-t bg-slate-50 flex justify-end">
-                <button onclick="closeModals()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold">Cerrar</button>
-            </div>
+            <div class="p-4 border-t bg-slate-50 flex justify-end"><button onclick="closeModals()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold">Cerrar</button></div>
         </div>
     </div>
 
-    <!-- MODAL NUEVO -->
     <div id="modal-add" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden scale-in">
             <div class="p-6 border-b border-emerald-100 flex justify-between items-center bg-emerald-50/50">
                 <h2 class="text-xl font-bold text-emerald-800 flex items-center gap-2"><i data-lucide="user-plus"></i> Nuevo Cadete</h2>
                 <button onclick="closeModals()" class="p-2 hover:bg-emerald-100 rounded-full transition"><i data-lucide="x" class="w-6 h-6 text-emerald-800"></i></button>
@@ -255,6 +235,7 @@
 
     <script>
         // --- CONFIGURACIÓN DE LINKS ---
+        // Pega aquí los links individuales para cada curso
         const SHEET_URLS = {
             '1er Año': '', 
             '2do Año': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTfvg2ERSB37qlvKd6DEhVNKNvP81J2_YrWncIfifrRcl5VdKnprhxOhJqqGfxLXg/pub?output=csv', 
@@ -269,10 +250,9 @@
         const itemsPerPage = 12;
         let editingId = null;
 
-        // Campos críticos (los que consideras fijos e importantes)
         const criticalFields = ['Apellido', 'Nombre', 'DNI', 'CUIL', 'Celular', 'LOCALIDAD3', 'CORREO ELECTRONICO', 'Domicilio', 'Comisaria'];
 
-        function initIcons() { lucide.createIcons(); }
+        function initIcons() { if (window.lucide) lucide.createIcons(); }
 
         async function fetchFromSheets() {
             const btn = document.getElementById('refresh-icon');
@@ -280,14 +260,10 @@
             if (btn) btn.classList.add('animate-spin');
             
             let allData = [];
-            let errors = 0;
-            let configuredLinks = 0;
             
             try {
                 for (const [year, url] of Object.entries(SHEET_URLS)) {
                     if (!url || !url.startsWith('http')) continue;
-                    configuredLinks++;
-                    
                     try {
                         const response = await fetch(url);
                         if (!response.ok) throw new Error();
@@ -295,43 +271,53 @@
                         const parsed = parseCSV(text, year);
                         allData = [...allData, ...parsed];
                     } catch (err) {
-                        errors++;
-                        console.error(`Error cargando ${year}:`, err);
+                        console.error(`Error cargando ${year}`);
                     }
                 }
                 
                 if (allData.length > 0) {
                     students = allData;
-                    statusEl.innerHTML = `
-                        <span class="flex items-center gap-1 text-emerald-600 font-semibold">
-                            <i data-lucide="check-circle" class="w-3 h-3"></i> 
-                            Sincronizado: ${new Date().toLocaleTimeString()}
-                        </span>`;
-                } else if (configuredLinks > 0 && errors === configuredLinks) {
-                    statusEl.innerHTML = `<span class="text-rose-500 font-medium text-xs">Error de conexión (CORS/Link Inválido)</span>`;
-                } else {
-                    statusEl.innerHTML = `<span class="text-amber-500 font-medium text-xs italic">Sin datos cargados. Carga local o configura links.</span>`;
+                    if (statusEl) {
+                        statusEl.innerHTML = `
+                            <span class="flex items-center gap-1 text-emerald-600 font-semibold">
+                                <i data-lucide="check-circle" class="w-3 h-3"></i> 
+                                Datos listos: ${new Date().toLocaleTimeString()}
+                            </span>`;
+                    }
                 }
                 render();
             } catch (e) {
-                statusEl.innerHTML = `<span class="text-rose-500 font-medium italic">Fallo crítico de sistema</span>`;
+                if (statusEl) statusEl.innerHTML = `<span class="text-rose-500 font-medium italic">Fallo conexión</span>`;
             } finally {
                 if (btn) btn.classList.remove('animate-spin');
                 initIcons();
             }
         }
 
+        // Mejor procesador de CSV que maneja saltos de línea y filas vacías de Google
         function parseCSV(text, yearLabel) {
-            const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
-            if (lines.length < 2) return [];
-            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            const result = [];
+            let headers = [];
             
-            return lines.slice(1).map(line => {
-                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
+            // Dividir respetando comillas
+            const rows = text.match(/(".*?"|[^",\r\n]+)(?=\s*,|\s*\r?\n|$)|(?<=,|^)(?=\s*,|\s*\r?\n|$)/g) || [];
+            
+            // Reconstruir filas basándonos en el número de columnas de la cabecera
+            const firstLine = text.split(/\r?\n/)[0];
+            headers = firstLine.split(',').map(h => h.trim().replace(/"/g, ''));
+            const colCount = headers.length;
+            
+            const rawValues = text.split(/\r?\n/).map(row => {
+                return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
+            });
+
+            // Filtrar cabecera y filas vacías reales
+            const dataRows = rawValues.slice(1).filter(r => r.length > 1 && r[0] !== "");
+
+            return dataRows.map(row => {
                 const obj = {};
-                headers.forEach((h, i) => obj[h] = values[i] || '');
+                headers.forEach((h, i) => obj[h] = row[i] || '');
                 obj.id = Math.random().toString(36).substr(2, 9);
-                // Si el año no viene en el CSV, usar la etiqueta del link
                 if (yearLabel && (!obj['Año'] || obj['Año'] === '')) obj['Año'] = yearLabel;
                 return obj;
             });
@@ -357,84 +343,52 @@
             document.getElementById('stat-total').innerText = students.length;
             document.getElementById('stat-1er').innerText = students.filter(s => s['Año']?.includes('1')).length;
             document.getElementById('stat-2do').innerText = students.filter(s => s['Año']?.includes('2')).length;
+            document.getElementById('stat-3er').innerText = students.filter(s => s['Año']?.includes('3')).length;
             document.getElementById('stat-incomplete').innerText = students.filter(s => getCompleteness(s) < 100).length;
 
             const start = (currentPage - 1) * itemsPerPage;
             const pageData = filtered.slice(start, start + itemsPerPage);
             const tbody = document.getElementById('table-body');
             
-            tbody.innerHTML = pageData.map(s => {
-                const comp = getCompleteness(s);
-                const colorClass = comp === 100 ? 'bg-emerald-500' : comp > 60 ? 'bg-amber-400' : 'bg-rose-500';
-                const yearClass = s['Año']?.includes('1') ? 'bg-blue-100 text-blue-700' : s['Año']?.includes('2') ? 'bg-indigo-100 text-indigo-700' : 'bg-violet-100 text-violet-700';
-
-                return `
-                    <tr class="hover:bg-slate-50 group border-b border-slate-50">
-                        <td class="p-5">
-                            <div class="font-bold text-slate-900">${s.Apellido || 'S/A'}, ${s.Nombre || 'S/N'}</div>
-                            <div class="text-[11px] text-slate-400 mt-0.5">${s.Celular || 'Sin teléfono'}</div>
-                        </td>
-                        <td class="p-5">
-                            <div class="text-xs font-semibold text-slate-700">${s.DNI || 'S/D'}</div>
-                            <div class="text-[9px] text-slate-400 font-mono italic">${s.CUIL || '-'}</div>
-                        </td>
-                        <td class="p-5 text-center">
-                            <span class="inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase ${yearClass}">
-                                ${s['Año'] || 'S/D'}
-                            </span>
-                        </td>
-                        <td class="p-5">
-                            <div class="text-xs text-slate-600 truncate max-w-[150px]">${s.LOCALIDAD3 || s.Localidad || '-'}</div>
-                        </td>
-                        <td class="p-5 min-w-[140px]">
-                            <div class="flex items-center gap-2">
-                                <div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                    <div class="h-full transition-all duration-700 rounded-full ${colorClass}" style="width: ${comp}%"></div>
+            if (tbody) {
+                tbody.innerHTML = pageData.map(s => {
+                    const comp = getCompleteness(s);
+                    const colorClass = comp === 100 ? 'bg-emerald-500' : comp > 60 ? 'bg-amber-400' : 'bg-rose-500';
+                    const yearClass = s['Año']?.includes('1') ? 'bg-blue-100 text-blue-700' : s['Año']?.includes('2') ? 'bg-indigo-100 text-indigo-700' : 'bg-violet-100 text-violet-700';
+                    return `
+                        <tr class="hover:bg-slate-50 group border-b border-slate-50">
+                            <td class="p-5 font-medium">${s.Apellido || 'S/A'}, ${s.Nombre || 'S/N'}</td>
+                            <td class="p-5 text-xs text-slate-600">${s.DNI || '---'}</td>
+                            <td class="p-5 text-center"><span class="px-2 py-1 rounded-full text-[10px] font-bold ${yearClass}">${s['Año'] || '---'}</span></td>
+                            <td class="p-5 text-xs text-slate-500">${s.LOCALIDAD3 || s.Localidad || '-'}</td>
+                            <td class="p-5 min-w-[120px]">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-1 bg-slate-100 h-1.5 rounded-full overflow-hidden"><div class="h-full ${colorClass}" style="width: ${comp}%"></div></div>
+                                    <span class="text-[9px] font-bold text-slate-400">${Math.round(comp)}%</span>
                                 </div>
-                                <span class="text-[10px] font-bold text-slate-500 w-8 text-right">${Math.round(comp)}%</span>
-                            </div>
-                        </td>
-                        <td class="p-5 text-right">
-                            <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="openEditModal('${s.id}')" class="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                                <button onclick="deleteStudent('${s.id}')" class="p-2 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            if (pageData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-24 text-center text-slate-400 italic font-medium"><i data-lucide="search-x" class="w-10 h-10 mx-auto mb-2 opacity-20"></i>No hay registros cargados. Usa el botón Sincronizar.</td></tr>`;
+                            </td>
+                            <td class="p-5 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="openEditModal('${s.id}')" class="p-1.5 text-indigo-500 hover:bg-indigo-50 rounded-lg"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                <button onclick="deleteStudent('${s.id}')" class="p-1.5 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </td>
+                        </tr>`;
+                }).join('');
+                if (pageData.length === 0) tbody.innerHTML = `<tr><td colspan="6" class="p-20 text-center text-slate-400 italic">No hay registros cargados.</td></tr>`;
             }
-
-            document.getElementById('pagination-info').innerText = filtered.length > 0 ? `Mostrando ${pageData.length} de ${filtered.length} resultados` : 'Base de datos vacía';
+            const elPag = document.getElementById('pagination-info');
+            if (elPag) elPag.innerText = `Resultados: ${filtered.length}`;
             initIcons();
         }
 
-        // --- MANEJO DE REPORTES Y EDICIÓN ---
-
+        // --- MANEJO DE MODALES ---
         function openReportModal() {
             const container = document.getElementById('report-container');
             const incomplete = students.filter(s => getCompleteness(s) < 100);
-            if (incomplete.length === 0) {
-                container.innerHTML = `<div class="p-10 text-center text-emerald-600 font-bold">¡Perfecto! Todos los datos críticos están completos.</div>`;
-            } else {
-                container.innerHTML = incomplete.map(s => {
-                    const missing = criticalFields.filter(f => !s[f] || String(s[f]).trim() === '' || s[f] === '-' || s[f] === '0');
-                    return `
-                        <div class="p-4 border border-amber-200 bg-amber-50/20 rounded-xl">
-                            <div class="flex justify-between items-start mb-2">
-                                <h3 class="font-bold text-slate-900">${s.Apellido}, ${s.Nombre} <span class="text-xs text-slate-400 font-normal">(${s['Año']})</span></h3>
-                                <span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold uppercase tracking-tight">Faltan ${missing.length} datos</span>
-                            </div>
-                            <div class="flex flex-wrap gap-2">
-                                ${missing.map(m => `<span class="text-[9px] bg-white border border-slate-200 px-2 py-1 rounded-md text-slate-500 italic uppercase">${m}</span>`).join('')}
-                            </div>
-                        </div>
-                    `;
+            container.innerHTML = incomplete.length === 0 ? `<p class="p-10 text-center font-bold text-emerald-600">Todo completo.</p>` : 
+                incomplete.map(s => {
+                    const missing = criticalFields.filter(f => !s[f] || String(s[f]).trim() === '');
+                    return `<div class="p-3 border rounded-xl bg-amber-50/20 text-xs"><strong>${s.Apellido}</strong> - Faltan: ${missing.join(', ')}</div>`;
                 }).join('');
-            }
             document.getElementById('modal-report').classList.add('active');
             initIcons();
         }
@@ -444,70 +398,54 @@
             if (!s) return;
             editingId = id;
             const container = document.getElementById('edit-fields-container');
-            const allKeys = Object.keys(s).filter(k => k !== 'id');
-            const sortedKeys = [...criticalFields.filter(f => allKeys.includes(f)), ...allKeys.filter(f => !criticalFields.includes(f))];
-            container.innerHTML = sortedKeys.map(key => `
-                <div class="group">
-                    <label class="block text-[10px] font-bold uppercase mb-1 ${criticalFields.includes(key) ? 'text-indigo-600' : 'text-slate-400'}">
-                        ${key} ${criticalFields.includes(key) ? '<span class="text-indigo-400">*</span>' : ''}
-                    </label>
-                    <input type="text" name="${key}" value="${s[key]}" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                </div>
-            `).join('');
+            const keys = Object.keys(s).filter(k => k !== 'id');
+            container.innerHTML = keys.map(key => `
+                <div>
+                    <label class="block text-[10px] font-bold uppercase mb-1 text-slate-400">${key}</label>
+                    <input type="text" name="${key}" value="${s[key]}" class="w-full bg-slate-50 border p-2 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>`).join('');
             document.getElementById('modal-edit').classList.add('active');
-            initIcons();
         }
 
-        function deleteStudent(id) { if (confirm("¿Eliminar registro? Los cambios son locales.")) { students = students.filter(s => s.id !== id); render(); } }
-        function openAddModal() { document.getElementById('modal-add').classList.add('active'); initIcons(); }
-        function openHelpModal() { document.getElementById('modal-help').classList.add('active'); initIcons(); }
-        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); editingId = null; }
+        function deleteStudent(id) { if (confirm("¿Eliminar?")) { students = students.filter(s => s.id !== id); render(); } }
+        function openAddModal() { document.getElementById('modal-add').classList.add('active'); }
+        function openHelpModal() { document.getElementById('modal-help').classList.add('active'); }
+        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); }
 
-        document.getElementById('search-input').addEventListener('input', (e) => { searchTerm = e.target.value; currentPage = 1; render(); });
-        document.getElementById('filter-year').addEventListener('change', (e) => { filterYear = e.target.value; currentPage = 1; render(); });
-        document.getElementById('toggle-incomplete').addEventListener('click', () => {
-            showIncompleteOnly = !showIncompleteOnly;
-            document.getElementById('toggle-incomplete').classList.toggle('bg-amber-50');
-            document.getElementById('toggle-incomplete').classList.toggle('border-amber-300');
-            render();
-        });
-
-        document.getElementById('form-edit').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const data = {};
-            formData.forEach((v, k) => data[k] = v);
-            students = students.map(s => s.id === editingId ? { ...s, ...data } : s);
-            closeModals();
-            render();
-        });
-
-        document.getElementById('form-add').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const data = { id: Math.random().toString(36).substr(2, 9) };
-            formData.forEach((v, k) => data[k] = v);
-            students = [data, ...students];
-            closeModals();
-            e.target.reset();
-            render();
-        });
-
-        const csvUpload = document.getElementById('csv-upload');
-        if (csvUpload) {
-            csvUpload.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const localData = parseCSV(ev.target.result, "Local");
-                    students = [...localData, ...students];
-                    render();
-                    alert("Se han importado " + localData.length + " registros locales.");
-                };
-                reader.readAsText(file);
+        // --- INICIALIZACIÓN ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('search-input')?.addEventListener('input', (e) => { searchTerm = e.target.value; render(); });
+            document.getElementById('filter-year')?.addEventListener('change', (e) => { filterYear = e.target.value; render(); });
+            document.getElementById('toggle-incomplete')?.addEventListener('click', () => { showIncompleteOnly = !showIncompleteOnly; render(); });
+            
+            document.getElementById('form-edit')?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const data = {};
+                new FormData(e.target).forEach((v, k) => data[k] = v);
+                students = students.map(s => s.id === editingId ? { ...s, ...data } : s);
+                closeModals();
+                render();
             });
-        }
+
+            document.getElementById('form-add')?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const data = { id: Math.random().toString(36).substr(2, 9) };
+                new FormData(e.target).forEach((v, k) => data[k] = v);
+                students = [data, ...students];
+                closeModals();
+                render();
+            });
+
+            const csvUpload = document.getElementById('csv-upload');
+            if (csvUpload) {
+                csvUpload.addEventListener('change', (e) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => { students = [...parseCSV(ev.target.result, "Local"), ...students]; render(); };
+                    reader.readAsText(e.target.files[0]);
+                });
+            }
+            fetchFromSheets();
+        });
 
         function exportToCSV() {
             if (students.length === 0) return;
@@ -516,15 +454,11 @@
             const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `ROL_AUDITADO_${new Date().toISOString().split('T')[0]}.csv`;
+            link.download = `ROL_COMBATE.csv`;
             link.click();
         }
-
-        function nextPage() { if (currentPage * itemsPerPage < students.length) { currentPage++; render(); } }
-        function prevPage() { if (currentPage > 1) { currentPage--; render(); } }
-
-        window.onload = () => { initIcons(); fetchFromSheets(); };
+        function nextPage() { currentPage++; render(); }
+        function prevPage() { if (currentPage > 1) currentPage--; render(); }
     </script>
 </body>
 </html>
-
