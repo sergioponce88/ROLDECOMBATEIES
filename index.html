@@ -19,12 +19,20 @@
         tr { transition: all 0.2s ease-in-out; }
         .scale-in { animation: scaleIn 0.2s ease-out; }
         @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; p: 0; }
+            .modal { position: absolute; left: 0; top: 0; display: block !important; box-shadow: none; }
+            .bg-slate-900\/60 { display: none !important; }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
 
     <!-- CONTENEDOR DE LA APP -->
-    <div id="app" class="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+    <div id="app" class="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto no-print">
         
         <!-- CABECERA -->
         <header class="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
@@ -48,16 +56,10 @@
                     <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
                     Sincronizar Cloud
                 </button>
-                <button onclick="openHelpModal()" class="p-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl transition shadow-sm" title="Ayuda Configuración">
-                    <i data-lucide="help-circle" class="w-5 h-5"></i>
+                <button onclick="openCustomListModal()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-4 py-2.5 rounded-xl transition font-medium border border-indigo-100 shadow-sm">
+                    <i data-lucide="layout-list" class="w-4 h-4"></i>
+                    Generar Listado
                 </button>
-                
-                <label class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-4 py-2.5 rounded-xl cursor-pointer transition font-medium border border-indigo-100 active:scale-95 shadow-sm">
-                    <i data-lucide="upload" class="w-4 h-4"></i>
-                    Cargar Local
-                    <input type="file" id="csv-upload" class="hidden" accept=".csv">
-                </label>
-
                 <button onclick="openAddModal()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl transition shadow-md font-medium active:scale-95">
                     <i data-lucide="user-plus" class="w-4 h-4"></i>
                     Nuevo Registro
@@ -160,7 +162,9 @@
     </div>
 
     <!-- MODALES -->
-    <div id="modal-edit" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
+
+    <!-- MODAL EDITAR -->
+    <div id="modal-edit" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col scale-in">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <div>
@@ -179,7 +183,58 @@
         </div>
     </div>
 
-    <div id="modal-report" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
+    <!-- MODAL REPORTE INDIVIDUAL (PARA IMPRIMIR) -->
+    <div id="modal-print-individual" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col scale-in">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-600 text-white no-print">
+                <h2 class="text-xl font-bold">Vista Previa de Ficha Individual</h2>
+                <div class="flex gap-2">
+                    <button onclick="window.print()" class="px-4 py-2 bg-white text-indigo-600 rounded-lg font-bold flex items-center gap-2">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
+                    </button>
+                    <button onclick="closeModals()" class="p-2 hover:bg-indigo-500 rounded-full transition text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+            </div>
+            <div id="print-individual-content" class="p-10 overflow-y-auto flex-1 bg-white">
+                <!-- Contenido generado para imprimir -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL LISTADO PERSONALIZADO -->
+    <div id="modal-custom-list" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col scale-in">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-800 text-white">
+                <div>
+                    <h2 class="text-xl font-bold">Generador de Listado Personalizado</h2>
+                    <p class="text-xs text-slate-300">Selecciona las columnas que deseas incluir en el informe</p>
+                </div>
+                <button onclick="closeModals()" class="p-2 hover:bg-slate-700 rounded-full transition text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 custom-scrollbar">
+                <div class="mb-6">
+                    <h3 class="font-bold text-sm text-slate-700 mb-3 border-b pb-2">Columnas Disponibles</h3>
+                    <div id="column-selector" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        <!-- Checkboxes generados dinámicamente -->
+                    </div>
+                </div>
+                <div class="mt-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-sm text-slate-700">Vista Previa (Top 50 resultados)</h3>
+                        <button onclick="printCustomList()" class="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2">
+                            <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Listado
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto border rounded-xl" id="custom-list-preview">
+                        <!-- Tabla previa -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FALTANTES -->
+    <div id="modal-report" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col scale-in">
             <div class="p-6 border-b border-amber-100 flex justify-between items-center bg-amber-50">
                 <div>
@@ -195,22 +250,21 @@
         </div>
     </div>
 
-    <div id="modal-help" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
+    <!-- MODAL AYUDA -->
+    <div id="modal-help" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden scale-in">
             <div class="p-6 border-b bg-indigo-50"><h2 class="text-xl font-bold text-indigo-900">Configuración Cloud</h2></div>
             <div class="p-6 space-y-4 text-sm leading-relaxed text-slate-600">
                 <p>1. En Google Sheets: <strong>Archivo > Compartir > Publicar en la web</strong>.</p>
                 <p>2. Elige la hoja (1°, 2° o 3° año) y cambia a <strong>Valores separados por comas (.csv)</strong>.</p>
                 <p>3. Pega el link en la sección <code>SHEET_URLS</code> del código para cada año.</p>
-                <div class="p-3 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-800">
-                    <strong>Nota:</strong> Si te aparecen menos registros de los esperados, asegúrate de que el link de 2do año no sea el único configurado.
-                </div>
             </div>
             <div class="p-4 border-t bg-slate-50 flex justify-end"><button onclick="closeModals()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold">Cerrar</button></div>
         </div>
     </div>
 
-    <div id="modal-add" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
+    <!-- MODAL NUEVO -->
+    <div id="modal-add" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden scale-in">
             <div class="p-6 border-b border-emerald-100 flex justify-between items-center bg-emerald-50/50">
                 <h2 class="text-xl font-bold text-emerald-800 flex items-center gap-2"><i data-lucide="user-plus"></i> Nuevo Cadete</h2>
@@ -235,7 +289,6 @@
 
     <script>
         // --- CONFIGURACIÓN DE LINKS ---
-        // Pega aquí los links individuales para cada curso
         const SHEET_URLS = {
             '1er Año': '', 
             '2do Año': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTfvg2ERSB37qlvKd6DEhVNKNvP81J2_YrWncIfifrRcl5VdKnprhxOhJqqGfxLXg/pub?output=csv', 
@@ -249,6 +302,7 @@
         let currentPage = 1;
         const itemsPerPage = 12;
         let editingId = null;
+        let allHeaders = [];
 
         const criticalFields = ['Apellido', 'Nombre', 'DNI', 'CUIL', 'Celular', 'LOCALIDAD3', 'CORREO ELECTRONICO', 'Domicilio', 'Comisaria'];
 
@@ -294,25 +348,19 @@
             }
         }
 
-        // Mejor procesador de CSV que maneja saltos de línea y filas vacías de Google
         function parseCSV(text, yearLabel) {
-            const result = [];
-            let headers = [];
+            const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+            if (lines.length < 2) return [];
             
-            // Dividir respetando comillas
-            const rows = text.match(/(".*?"|[^",\r\n]+)(?=\s*,|\s*\r?\n|$)|(?<=,|^)(?=\s*,|\s*\r?\n|$)/g) || [];
+            const firstLine = lines[0];
+            const headers = firstLine.split(',').map(h => h.trim().replace(/"/g, ''));
+            allHeaders = [...new Set([...allHeaders, ...headers])]; // Acumular headers únicos
             
-            // Reconstruir filas basándonos en el número de columnas de la cabecera
-            const firstLine = text.split(/\r?\n/)[0];
-            headers = firstLine.split(',').map(h => h.trim().replace(/"/g, ''));
-            const colCount = headers.length;
-            
-            const rawValues = text.split(/\r?\n/).map(row => {
+            const rawValues = lines.slice(1).map(row => {
                 return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
             });
 
-            // Filtrar cabecera y filas vacías reales
-            const dataRows = rawValues.slice(1).filter(r => r.length > 1 && r[0] !== "");
+            const dataRows = rawValues.filter(r => r.length > 1 && r[0] !== "");
 
             return dataRows.map(row => {
                 const obj = {};
@@ -368,8 +416,11 @@
                                 </div>
                             </td>
                             <td class="p-5 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="openEditModal('${s.id}')" class="p-1.5 text-indigo-500 hover:bg-indigo-50 rounded-lg"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                                <button onclick="deleteStudent('${s.id}')" class="p-1.5 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                <div class="flex justify-end gap-1">
+                                    <button onclick="openPrintIndividualModal('${s.id}')" class="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg" title="Imprimir Ficha"><i data-lucide="printer" class="w-4 h-4"></i></button>
+                                    <button onclick="openEditModal('${s.id}')" class="p-1.5 text-indigo-500 hover:bg-indigo-50 rounded-lg"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                    <button onclick="deleteStudent('${s.id}')" class="p-1.5 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                </div>
                             </td>
                         </tr>`;
                 }).join('');
@@ -380,7 +431,160 @@
             initIcons();
         }
 
-        // --- MANEJO DE MODALES ---
+        // --- FUNCIONALIDADES DE IMPRESIÓN Y LISTADO ---
+
+        function openPrintIndividualModal(id) {
+            const s = students.find(x => x.id === id);
+            if (!s) return;
+            
+            const content = document.getElementById('print-individual-content');
+            let html = `
+                <div class="border-4 border-double border-slate-900 p-8">
+                    <div class="flex justify-between items-start mb-8 border-b-2 border-slate-900 pb-4">
+                        <div>
+                            <h1 class="text-3xl font-black uppercase text-slate-900 tracking-tighter">Ficha de Cadete</h1>
+                            <p class="text-lg font-bold text-indigo-700">${s['Año'] || 'CURSO NO ASIGNADO'}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-mono text-sm">Legajo: ${s.Legajo || '---'}</p>
+                            <p class="font-mono text-sm">Fecha Reporte: ${new Date().toLocaleDateString()}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-x-12 gap-y-4 mb-8">
+                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">Apellido</p><p class="border-b border-slate-200 py-1 font-semibold">${s.Apellido || '---'}</p></div>
+                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">Nombre</p><p class="border-b border-slate-200 py-1 font-semibold">${s.Nombre || '---'}</p></div>
+                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">DNI</p><p class="border-b border-slate-200 py-1 font-mono">${s.DNI || '---'}</p></div>
+                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">CUIL</p><p class="border-b border-slate-200 py-1 font-mono">${s.CUIL || '---'}</p></div>
+                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">Edad</p><p class="border-b border-slate-200 py-1">${s.Edad || '---'}</p></div>
+                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">Localidad</p><p class="border-b border-slate-200 py-1">${s.LOCALIDAD3 || s.Localidad || '---'}</p></div>
+                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">Celular</p><p class="border-b border-slate-200 py-1">${s.Celular || '---'}</p></div>
+                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">Correo</p><p class="border-b border-slate-200 py-1">${s['CORREO ELECTRONICO'] || '---'}</p></div>
+                    </div>
+
+                    <h3 class="bg-slate-900 text-white px-3 py-1 text-sm font-bold uppercase mb-4">Información Detallada (Resto de Campos)</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+            `;
+
+            const skipKeys = ['id', 'Apellido', 'Nombre', 'DNI', 'CUIL', 'Edad', 'LOCALIDAD3', 'Localidad', 'Celular', 'CORREO ELECTRONICO', 'Año'];
+            Object.keys(s).forEach(key => {
+                if (!skipKeys.includes(key)) {
+                    html += `
+                        <div class="border-b border-slate-100 pb-1">
+                            <p class="text-[8px] text-slate-400 font-bold uppercase">${key}</p>
+                            <p class="text-slate-800">${s[key] || '---'}</p>
+                        </div>
+                    `;
+                }
+            });
+
+            html += `
+                    </div>
+                    <div class="mt-12 pt-8 flex justify-around items-center border-t border-slate-300">
+                        <div class="text-center w-48">
+                            <div class="h-0.5 bg-slate-400 w-full mb-2"></div>
+                            <p class="text-[10px] uppercase font-bold">Firma del Cadete</p>
+                        </div>
+                        <div class="text-center w-48">
+                            <div class="h-0.5 bg-slate-400 w-full mb-2"></div>
+                            <p class="text-[10px] uppercase font-bold">Sello y Firma Responsable</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            content.innerHTML = html;
+            document.getElementById('modal-print-individual').classList.add('active');
+            initIcons();
+        }
+
+        function openCustomListModal() {
+            const selector = document.getElementById('column-selector');
+            const defaultCols = ['Apellido', 'Nombre', 'DNI', 'Año', 'Celular'];
+            
+            selector.innerHTML = allHeaders.map(h => `
+                <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200">
+                    <input type="checkbox" value="${h}" ${defaultCols.includes(h) ? 'checked' : ''} onchange="updateCustomListPreview()" class="w-4 h-4 text-indigo-600 rounded">
+                    <span class="text-xs truncate">${h}</span>
+                </label>
+            `).join('');
+            
+            updateCustomListPreview();
+            document.getElementById('modal-custom-list').classList.add('active');
+            initIcons();
+        }
+
+        function updateCustomListPreview() {
+            const selectedCols = Array.from(document.querySelectorAll('#column-selector input:checked')).map(cb => cb.value);
+            const container = document.getElementById('custom-list-preview');
+            
+            if (selectedCols.length === 0) {
+                container.innerHTML = `<p class="p-10 text-center text-slate-400 italic">Selecciona al menos una columna</p>`;
+                return;
+            }
+
+            const previewData = students.slice(0, 50); // Limitar vista previa
+            let html = `
+                <table class="w-full text-left border-collapse text-[10px]">
+                    <thead class="bg-slate-100">
+                        <tr>
+                            ${selectedCols.map(c => `<th class="p-2 border font-bold uppercase text-slate-600">${c}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${previewData.map(s => `
+                            <tr>
+                                ${selectedCols.map(c => `<td class="p-2 border text-slate-700">${s[c] || ''}</td>`).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            container.innerHTML = html;
+        }
+
+        function printCustomList() {
+            const selectedCols = Array.from(document.querySelectorAll('#column-selector input:checked')).map(cb => cb.value);
+            if (selectedCols.length === 0) return;
+
+            // Crear ventana temporal para imprimir
+            const printWindow = window.open('', '_blank');
+            let tableHtml = `
+                <html>
+                <head>
+                    <title>Listado Rol de Combate</title>
+                    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+                    <style>
+                        @media print { @page { size: landscape; margin: 1cm; } }
+                        body { font-family: sans-serif; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 10px; }
+                        th { background: #f3f4f6; }
+                    </style>
+                </head>
+                <body>
+                    <h2 class="text-xl font-bold mb-4">Listado Personalizado de Cadetes</h2>
+                    <p class="text-xs mb-4">Fecha: ${new Date().toLocaleDateString()} | Total registros: ${students.length}</p>
+                    <table>
+                        <thead>
+                            <tr>${selectedCols.map(c => `<th>${c}</th>`).join('')}</tr>
+                        </thead>
+                        <tbody>
+                            ${students.map(s => `<tr>${selectedCols.map(c => `<td>${s[c] || ''}</td>`).join('')}</tr>`).join('')}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+            printWindow.document.write(tableHtml);
+            printWindow.document.close();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
+        }
+
+        // --- MANEJO DE MODALES ESTÁNDAR ---
         function openReportModal() {
             const container = document.getElementById('report-container');
             const incomplete = students.filter(s => getCompleteness(s) < 100);
