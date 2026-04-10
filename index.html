@@ -16,28 +16,29 @@
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        tr { transition: all 0.2s ease-in-out; }
-        .scale-in { animation: scaleIn 0.2s ease-out; }
-        @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; }
-            body { background: white; p: 0; }
-            .modal { position: absolute; left: 0; top: 0; display: block !important; box-shadow: none; }
+            body { background: white !important; }
+            .modal { position: absolute !important; left: 0 !important; top: 0 !important; display: block !important; box-shadow: none !important; }
             .bg-slate-900\/60 { display: none !important; }
+            .scale-in { transform: none !important; animation: none !important; }
         }
+
+        .scale-in { animation: scaleIn 0.2s ease-out; }
+        @keyframes scaleIn { from { transform: scale(0.98); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
 
-    <!-- CONTENEDOR DE LA APP -->
+    <!-- CONTENEDOR PRINCIPAL -->
     <div id="app" class="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto no-print">
         
         <!-- CABECERA -->
         <header class="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div class="flex items-center gap-4">
-                <div class="bg-indigo-600 p-3 rounded-xl text-white shadow-lg shadow-indigo-200">
+                <div class="bg-indigo-600 p-3 rounded-xl text-white shadow-lg">
                     <i data-lucide="shield-check" class="w-8 h-8"></i>
                 </div>
                 <div>
@@ -45,7 +46,7 @@
                     <div id="sync-status" class="flex items-center gap-2 text-sm text-slate-500">
                         <span class="flex items-center gap-1 text-slate-400 italic text-xs">
                             <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> 
-                            Iniciando conexión...
+                            Iniciando sistema...
                         </span>
                     </div>
                 </div>
@@ -54,19 +55,20 @@
             <div class="flex flex-wrap gap-2 w-full lg:w-auto">
                 <button onclick="fetchFromSheets()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 px-4 py-2.5 rounded-xl transition font-medium shadow-sm active:scale-95">
                     <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
-                    Sincronizar Cloud
+                    Actualizar Cloud
                 </button>
                 <button onclick="openCustomListModal()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-4 py-2.5 rounded-xl transition font-medium border border-indigo-100 shadow-sm">
                     <i data-lucide="layout-list" class="w-4 h-4"></i>
                     Generar Listado
                 </button>
+                <label class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2.5 rounded-xl cursor-pointer transition font-medium shadow-sm active:scale-95 border border-slate-200">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    Cargar Excel/CSV
+                    <input type="file" id="csv-upload" class="hidden" accept=".csv">
+                </label>
                 <button onclick="openAddModal()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl transition shadow-md font-medium active:scale-95">
-                    <i data-lucide="user-plus" class="w-4 h-4"></i>
-                    Nuevo Registro
-                </button>
-                <button onclick="openReportModal()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl transition shadow-md font-medium active:scale-95">
-                    <i data-lucide="file-text" class="w-4 h-4"></i>
-                    Faltantes
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Nuevo
                 </button>
                 <button onclick="exportToCSV()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl transition shadow-md font-medium active:scale-95">
                     <i data-lucide="download" class="w-4 h-4"></i>
@@ -142,7 +144,7 @@
                             <th class="p-5">DNI / CUIL</th>
                             <th class="p-5 text-center">Curso</th>
                             <th class="p-5">Localidad</th>
-                            <th class="p-5">Ficha</th>
+                            <th class="p-5">Estado</th>
                             <th class="p-5 text-right">Acciones</th>
                         </tr>
                     </thead>
@@ -167,36 +169,33 @@
     <div id="modal-edit" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col scale-in">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                <div>
-                    <h2 class="text-xl font-bold text-slate-900">Ficha Técnica</h2>
-                    <p class="text-xs text-slate-400">Edición de datos fijos y personales</p>
-                </div>
+                <h2 class="text-xl font-bold text-slate-900">Modificar Datos</h2>
                 <button onclick="closeModals()" class="p-2 hover:bg-slate-200 rounded-full transition"><i data-lucide="x" class="w-6 h-6 text-slate-400"></i></button>
             </div>
             <form id="form-edit" class="p-6 overflow-y-auto flex-1 custom-scrollbar">
                 <div id="edit-fields-container" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
                 <div class="flex justify-end gap-3 mt-8 pt-6 border-t bg-white sticky bottom-0">
                     <button type="button" onclick="closeModals()" class="px-6 py-2.5 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl transition">Cancelar</button>
-                    <button type="submit" class="px-8 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition">Guardar Cambios</button>
+                    <button type="submit" class="px-8 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg transition">Guardar</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL REPORTE INDIVIDUAL (PARA IMPRIMIR) -->
+    <!-- MODAL REPORTE INDIVIDUAL (FICHA COMPLETA) -->
     <div id="modal-print-individual" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col scale-in">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-600 text-white no-print">
-                <h2 class="text-xl font-bold">Vista Previa de Ficha Individual</h2>
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-800 text-white no-print">
+                <h2 class="text-xl font-bold">Vista Previa de Ficha</h2>
                 <div class="flex gap-2">
-                    <button onclick="window.print()" class="px-4 py-2 bg-white text-indigo-600 rounded-lg font-bold flex items-center gap-2">
-                        <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
+                    <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold flex items-center gap-2">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Ficha
                     </button>
-                    <button onclick="closeModals()" class="p-2 hover:bg-indigo-500 rounded-full transition text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                    <button onclick="closeModals()" class="p-2 hover:bg-slate-700 rounded-full text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
                 </div>
             </div>
-            <div id="print-individual-content" class="p-10 overflow-y-auto flex-1 bg-white">
-                <!-- Contenido generado para imprimir -->
+            <div id="print-individual-content" class="p-10 overflow-y-auto flex-1 bg-white print-only">
+                <!-- Se llena con JS -->
             </div>
         </div>
     </div>
@@ -204,30 +203,26 @@
     <!-- MODAL LISTADO PERSONALIZADO -->
     <div id="modal-custom-list" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col scale-in">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-800 text-white">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-900 text-white">
                 <div>
-                    <h2 class="text-xl font-bold">Generador de Listado Personalizado</h2>
-                    <p class="text-xs text-slate-300">Selecciona las columnas que deseas incluir en el informe</p>
+                    <h2 class="text-xl font-bold">Generador de Listados</h2>
+                    <p class="text-xs text-slate-300">Selecciona las columnas para el informe</p>
                 </div>
-                <button onclick="closeModals()" class="p-2 hover:bg-slate-700 rounded-full transition text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                <button onclick="closeModals()" class="p-2 hover:bg-slate-700 rounded-full text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <div class="p-6 overflow-y-auto flex-1 custom-scrollbar">
                 <div class="mb-6">
-                    <h3 class="font-bold text-sm text-slate-700 mb-3 border-b pb-2">Columnas Disponibles</h3>
-                    <div id="column-selector" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                        <!-- Checkboxes generados dinámicamente -->
-                    </div>
+                    <h3 class="font-bold text-sm text-slate-700 mb-3 border-b pb-2">Seleccionar Columnas</h3>
+                    <div id="column-selector" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3"></div>
                 </div>
-                <div class="mt-8">
+                <div class="mt-8 border-t pt-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-sm text-slate-700">Vista Previa (Top 50 resultados)</h3>
-                        <button onclick="printCustomList()" class="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2">
+                        <h3 class="font-bold text-sm text-slate-700">Vista Previa del Listado</h3>
+                        <button onclick="printCustomList()" class="px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold flex items-center gap-2 shadow-lg">
                             <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Listado
                         </button>
                     </div>
-                    <div class="overflow-x-auto border rounded-xl" id="custom-list-preview">
-                        <!-- Tabla previa -->
-                    </div>
+                    <div class="overflow-x-auto border rounded-xl" id="custom-list-preview"></div>
                 </div>
             </div>
         </div>
@@ -237,53 +232,13 @@
     <div id="modal-report" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col scale-in">
             <div class="p-6 border-b border-amber-100 flex justify-between items-center bg-amber-50">
-                <div>
-                    <h2 class="text-xl font-bold text-amber-900">Auditoría de Faltantes</h2>
-                    <p class="text-xs text-amber-700">Información crítica pendiente</p>
-                </div>
-                <button onclick="closeModals()" class="p-2 hover:bg-amber-100 rounded-full transition"><i data-lucide="x" class="w-6 h-6 text-amber-800"></i></button>
+                <h2 class="text-xl font-bold text-amber-900">Auditoría de Datos Faltantes</h2>
+                <button onclick="closeModals()" class="p-2 hover:bg-amber-100 rounded-full transition text-amber-800"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <div id="report-container" class="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4"></div>
             <div class="p-4 border-t bg-slate-50 flex justify-end">
-                <button onclick="window.print()" class="px-6 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i> Imprimir Reporte</button>
+                <button onclick="window.print()" class="px-6 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i> Imprimir Auditoría</button>
             </div>
-        </div>
-    </div>
-
-    <!-- MODAL AYUDA -->
-    <div id="modal-help" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden scale-in">
-            <div class="p-6 border-b bg-indigo-50"><h2 class="text-xl font-bold text-indigo-900">Configuración Cloud</h2></div>
-            <div class="p-6 space-y-4 text-sm leading-relaxed text-slate-600">
-                <p>1. En Google Sheets: <strong>Archivo > Compartir > Publicar en la web</strong>.</p>
-                <p>2. Elige la hoja (1°, 2° o 3° año) y cambia a <strong>Valores separados por comas (.csv)</strong>.</p>
-                <p>3. Pega el link en la sección <code>SHEET_URLS</code> del código para cada año.</p>
-            </div>
-            <div class="p-4 border-t bg-slate-50 flex justify-end"><button onclick="closeModals()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold">Cerrar</button></div>
-        </div>
-    </div>
-
-    <!-- MODAL NUEVO -->
-    <div id="modal-add" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4 no-print">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden scale-in">
-            <div class="p-6 border-b border-emerald-100 flex justify-between items-center bg-emerald-50/50">
-                <h2 class="text-xl font-bold text-emerald-800 flex items-center gap-2"><i data-lucide="user-plus"></i> Nuevo Cadete</h2>
-                <button onclick="closeModals()" class="p-2 hover:bg-emerald-100 rounded-full transition"><i data-lucide="x" class="w-6 h-6 text-emerald-800"></i></button>
-            </div>
-            <form id="form-add" class="p-8 space-y-4">
-                <input type="text" name="Apellido" placeholder="Apellido" required class="w-full border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
-                <input type="text" name="Nombre" placeholder="Nombre" required class="w-full border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
-                <input type="text" name="DNI" placeholder="DNI" required class="w-full border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
-                <select name="Año" class="w-full border border-slate-200 p-3 rounded-xl outline-none bg-slate-50 appearance-none">
-                    <option value="1er Año">1er Año</option>
-                    <option value="2do Año">2do Año</option>
-                    <option value="3er Año">3er Año</option>
-                </select>
-                <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
-                    <button type="button" onclick="closeModals()" class="px-6 py-3 text-slate-500 font-semibold hover:bg-slate-100 rounded-xl transition">Descartar</button>
-                    <button type="submit" class="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition">Registrar</button>
-                </div>
-            </form>
         </div>
     </div>
 
@@ -304,6 +259,7 @@
         let editingId = null;
         let allHeaders = [];
 
+        // Datos importantes para el sistema
         const criticalFields = ['Apellido', 'Nombre', 'DNI', 'CUIL', 'Celular', 'LOCALIDAD3', 'CORREO ELECTRONICO', 'Domicilio', 'Comisaria'];
 
         function initIcons() { if (window.lucide) lucide.createIcons(); }
@@ -314,53 +270,37 @@
             if (btn) btn.classList.add('animate-spin');
             
             let allData = [];
-            
             try {
                 for (const [year, url] of Object.entries(SHEET_URLS)) {
                     if (!url || !url.startsWith('http')) continue;
-                    try {
-                        const response = await fetch(url);
-                        if (!response.ok) throw new Error();
-                        const text = await response.text();
-                        const parsed = parseCSV(text, year);
-                        allData = [...allData, ...parsed];
-                    } catch (err) {
-                        console.error(`Error cargando ${year}`);
-                    }
+                    const response = await fetch(url);
+                    const text = await response.text();
+                    const parsed = parseCSV(text, year);
+                    allData = [...allData, ...parsed];
                 }
-                
-                if (allData.length > 0) {
-                    students = allData;
-                    if (statusEl) {
-                        statusEl.innerHTML = `
-                            <span class="flex items-center gap-1 text-emerald-600 font-semibold">
-                                <i data-lucide="check-circle" class="w-3 h-3"></i> 
-                                Datos listos: ${new Date().toLocaleTimeString()}
-                            </span>`;
-                    }
-                }
+                if (allData.length > 0) students = allData;
+                if (statusEl) statusEl.innerHTML = `<span class="text-emerald-600 font-semibold text-xs">Sincronizado: ${new Date().toLocaleTimeString()}</span>`;
                 render();
             } catch (e) {
-                if (statusEl) statusEl.innerHTML = `<span class="text-rose-500 font-medium italic">Fallo conexión</span>`;
+                if (statusEl) statusEl.innerHTML = `<span class="text-rose-500 font-medium italic text-xs">Error de conexión</span>`;
             } finally {
                 if (btn) btn.classList.remove('animate-spin');
                 initIcons();
             }
         }
 
+        // PARSER CON CORRECCIÓN DE Ñ Y ACENTOS PARA EXCEL LOCAL
         function parseCSV(text, yearLabel) {
             const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
             if (lines.length < 2) return [];
             
             const firstLine = lines[0];
             const headers = firstLine.split(',').map(h => h.trim().replace(/"/g, ''));
-            allHeaders = [...new Set([...allHeaders, ...headers])]; // Acumular headers únicos
+            allHeaders = [...new Set([...allHeaders, ...headers])]; // Guardar todos los encabezados únicos
             
-            const rawValues = lines.slice(1).map(row => {
+            const dataRows = lines.slice(1).map(row => {
                 return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
-            });
-
-            const dataRows = rawValues.filter(r => r.length > 1 && r[0] !== "");
+            }).filter(r => r.length > 1 && r[0] !== "");
 
             return dataRows.map(row => {
                 const obj = {};
@@ -374,7 +314,7 @@
         function getCompleteness(student) {
             const completed = criticalFields.filter(f => {
                 const val = student[f];
-                return val && String(val).trim() !== '' && val !== '-' && val !== '0' && val !== 'NO';
+                return val && String(val).trim() !== '' && val !== '-' && val !== '0';
             }).length;
             return (completed / criticalFields.length) * 100;
         }
@@ -405,7 +345,7 @@
                     const yearClass = s['Año']?.includes('1') ? 'bg-blue-100 text-blue-700' : s['Año']?.includes('2') ? 'bg-indigo-100 text-indigo-700' : 'bg-violet-100 text-violet-700';
                     return `
                         <tr class="hover:bg-slate-50 group border-b border-slate-50">
-                            <td class="p-5 font-medium">${s.Apellido || 'S/A'}, ${s.Nombre || 'S/N'}</td>
+                            <td class="p-5 font-bold text-slate-900">${s.Apellido || 'S/A'}, ${s.Nombre || 'S/N'}</td>
                             <td class="p-5 text-xs text-slate-600">${s.DNI || '---'}</td>
                             <td class="p-5 text-center"><span class="px-2 py-1 rounded-full text-[10px] font-bold ${yearClass}">${s['Año'] || '---'}</span></td>
                             <td class="p-5 text-xs text-slate-500">${s.LOCALIDAD3 || s.Localidad || '-'}</td>
@@ -418,94 +358,71 @@
                             <td class="p-5 text-right opacity-0 group-hover:opacity-100 transition-opacity">
                                 <div class="flex justify-end gap-1">
                                     <button onclick="openPrintIndividualModal('${s.id}')" class="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg" title="Imprimir Ficha"><i data-lucide="printer" class="w-4 h-4"></i></button>
-                                    <button onclick="openEditModal('${s.id}')" class="p-1.5 text-indigo-500 hover:bg-indigo-50 rounded-lg"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                    <button onclick="openEditModal('${s.id}')" class="p-1.5 text-indigo-500 hover:bg-indigo-50 rounded-lg" title="Editar"><i data-lucide="edit" class="w-4 h-4"></i></button>
                                     <button onclick="deleteStudent('${s.id}')" class="p-1.5 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                 </div>
                             </td>
                         </tr>`;
                 }).join('');
-                if (pageData.length === 0) tbody.innerHTML = `<tr><td colspan="6" class="p-20 text-center text-slate-400 italic">No hay registros cargados.</td></tr>`;
+                if (pageData.length === 0) tbody.innerHTML = `<tr><td colspan="6" class="p-20 text-center text-slate-400 italic">No se encontraron resultados.</td></tr>`;
             }
             const elPag = document.getElementById('pagination-info');
-            if (elPag) elPag.innerText = `Resultados: ${filtered.length}`;
+            if (elPag) elPag.innerText = `Mostrando ${pageData.length} de ${filtered.length}`;
             initIcons();
         }
 
-        // --- FUNCIONALIDADES DE IMPRESIÓN Y LISTADO ---
-
+        // --- REPORTE INDIVIDUAL ---
         function openPrintIndividualModal(id) {
             const s = students.find(x => x.id === id);
             if (!s) return;
-            
             const content = document.getElementById('print-individual-content');
-            let html = `
-                <div class="border-4 border-double border-slate-900 p-8">
-                    <div class="flex justify-between items-start mb-8 border-b-2 border-slate-900 pb-4">
-                        <div>
-                            <h1 class="text-3xl font-black uppercase text-slate-900 tracking-tighter">Ficha de Cadete</h1>
-                            <p class="text-lg font-bold text-indigo-700">${s['Año'] || 'CURSO NO ASIGNADO'}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="font-mono text-sm">Legajo: ${s.Legajo || '---'}</p>
-                            <p class="font-mono text-sm">Fecha Reporte: ${new Date().toLocaleDateString()}</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-x-12 gap-y-4 mb-8">
-                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">Apellido</p><p class="border-b border-slate-200 py-1 font-semibold">${s.Apellido || '---'}</p></div>
-                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">Nombre</p><p class="border-b border-slate-200 py-1 font-semibold">${s.Nombre || '---'}</p></div>
-                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">DNI</p><p class="border-b border-slate-200 py-1 font-mono">${s.DNI || '---'}</p></div>
-                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">CUIL</p><p class="border-b border-slate-200 py-1 font-mono">${s.CUIL || '---'}</p></div>
-                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">Edad</p><p class="border-b border-slate-200 py-1">${s.Edad || '---'}</p></div>
-                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">Localidad</p><p class="border-b border-slate-200 py-1">${s.LOCALIDAD3 || s.Localidad || '---'}</p></div>
-                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">Celular</p><p class="border-b border-slate-200 py-1">${s.Celular || '---'}</p></div>
-                        <div><p class="text-[10px] text-slate-500 uppercase font-bold">Correo</p><p class="border-b border-slate-200 py-1">${s['CORREO ELECTRONICO'] || '---'}</p></div>
-                    </div>
-
-                    <h3 class="bg-slate-900 text-white px-3 py-1 text-sm font-bold uppercase mb-4">Información Detallada (Resto de Campos)</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
-            `;
-
-            const skipKeys = ['id', 'Apellido', 'Nombre', 'DNI', 'CUIL', 'Edad', 'LOCALIDAD3', 'Localidad', 'Celular', 'CORREO ELECTRONICO', 'Año'];
-            Object.keys(s).forEach(key => {
-                if (!skipKeys.includes(key)) {
-                    html += `
-                        <div class="border-b border-slate-100 pb-1">
-                            <p class="text-[8px] text-slate-400 font-bold uppercase">${key}</p>
-                            <p class="text-slate-800">${s[key] || '---'}</p>
-                        </div>
-                    `;
+            
+            let tableContent = "";
+            Object.keys(s).forEach(k => {
+                if(k !== 'id') {
+                    tableContent += `
+                    <div class="border-b border-slate-100 py-2 flex justify-between items-center break-inside-avoid">
+                        <span class="text-[10px] font-bold uppercase text-slate-400 w-1/3">${k}:</span>
+                        <span class="text-sm font-semibold text-slate-900 w-2/3 text-right">${s[k] || '---'}</span>
+                    </div>`;
                 }
             });
 
-            html += `
-                    </div>
-                    <div class="mt-12 pt-8 flex justify-around items-center border-t border-slate-300">
-                        <div class="text-center w-48">
-                            <div class="h-0.5 bg-slate-400 w-full mb-2"></div>
-                            <p class="text-[10px] uppercase font-bold">Firma del Cadete</p>
+            content.innerHTML = `
+                <div class="border-4 border-slate-900 p-8 mb-4">
+                    <div class="flex justify-between items-center mb-8 border-b-4 border-slate-900 pb-4">
+                        <div class="text-3xl font-black uppercase tracking-tighter">Ficha Individual de Cadete</div>
+                        <div class="text-right">
+                            <p class="font-bold text-indigo-600">${s['Año'] || 'SIN AÑO'}</p>
+                            <p class="text-xs text-slate-400">${new Date().toLocaleDateString()}</p>
                         </div>
-                        <div class="text-center w-48">
-                            <div class="h-0.5 bg-slate-400 w-full mb-2"></div>
-                            <p class="text-[10px] uppercase font-bold">Sello y Firma Responsable</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-0">
+                        ${tableContent}
+                    </div>
+                    <div class="mt-16 flex justify-around">
+                        <div class="border-t-2 border-slate-400 w-48 text-center pt-2">
+                            <p class="text-[10px] font-bold uppercase">Firma del Cadete</p>
+                        </div>
+                        <div class="border-t-2 border-slate-400 w-48 text-center pt-2">
+                            <p class="text-[10px] font-bold uppercase">Firma del Responsable</p>
                         </div>
                     </div>
                 </div>
             `;
-
-            content.innerHTML = html;
             document.getElementById('modal-print-individual').classList.add('active');
             initIcons();
         }
 
+        // --- LISTADO PERSONALIZADO ---
         function openCustomListModal() {
             const selector = document.getElementById('column-selector');
-            const defaultCols = ['Apellido', 'Nombre', 'DNI', 'Año', 'Celular'];
+            const defaultCols = ['Apellido', 'Nombre', 'DNI', 'Año', 'Celular', 'Localidad'];
             
             selector.innerHTML = allHeaders.map(h => `
-                <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200">
+                <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent">
                     <input type="checkbox" value="${h}" ${defaultCols.includes(h) ? 'checked' : ''} onchange="updateCustomListPreview()" class="w-4 h-4 text-indigo-600 rounded">
-                    <span class="text-xs truncate">${h}</span>
+                    <span class="text-[11px] truncate">${h}</span>
                 </label>
             `).join('');
             
@@ -517,93 +434,50 @@
         function updateCustomListPreview() {
             const selectedCols = Array.from(document.querySelectorAll('#column-selector input:checked')).map(cb => cb.value);
             const container = document.getElementById('custom-list-preview');
-            
-            if (selectedCols.length === 0) {
-                container.innerHTML = `<p class="p-10 text-center text-slate-400 italic">Selecciona al menos una columna</p>`;
-                return;
-            }
+            const data = students.slice(0, 10); // Vista previa pequeña
 
-            const previewData = students.slice(0, 50); // Limitar vista previa
-            let html = `
-                <table class="w-full text-left border-collapse text-[10px]">
-                    <thead class="bg-slate-100">
-                        <tr>
-                            ${selectedCols.map(c => `<th class="p-2 border font-bold uppercase text-slate-600">${c}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${previewData.map(s => `
-                            <tr>
-                                ${selectedCols.map(c => `<td class="p-2 border text-slate-700">${s[c] || ''}</td>`).join('')}
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+            let html = `<table class="w-full text-left border-collapse text-[10px]">
+                <thead class="bg-slate-800 text-white">
+                    <tr>${selectedCols.map(c => `<th class="p-2 border border-slate-700">${c}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                    ${data.map(s => `<tr>${selectedCols.map(c => `<td class="p-2 border">${s[c] || ''}</td>`).join('')}</tr>`).join('')}
+                </tbody>
+            </table>`;
             container.innerHTML = html;
         }
 
         function printCustomList() {
             const selectedCols = Array.from(document.querySelectorAll('#column-selector input:checked')).map(cb => cb.value);
-            if (selectedCols.length === 0) return;
-
-            // Crear ventana temporal para imprimir
-            const printWindow = window.open('', '_blank');
-            let tableHtml = `
-                <html>
-                <head>
-                    <title>Listado Rol de Combate</title>
-                    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-                    <style>
-                        @media print { @page { size: landscape; margin: 1cm; } }
-                        body { font-family: sans-serif; }
-                        table { width: 100%; border-collapse: collapse; }
-                        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 10px; }
-                        th { background: #f3f4f6; }
-                    </style>
-                </head>
-                <body>
-                    <h2 class="text-xl font-bold mb-4">Listado Personalizado de Cadetes</h2>
-                    <p class="text-xs mb-4">Fecha: ${new Date().toLocaleDateString()} | Total registros: ${students.length}</p>
-                    <table>
-                        <thead>
-                            <tr>${selectedCols.map(c => `<th>${c}</th>`).join('')}</tr>
-                        </thead>
-                        <tbody>
-                            ${students.map(s => `<tr>${selectedCols.map(c => `<td>${s[c] || ''}</td>`).join('')}</tr>`).join('')}
-                        </tbody>
-                    </table>
-                </body>
-                </html>
-            `;
-            printWindow.document.write(tableHtml);
-            printWindow.document.close();
-            setTimeout(() => {
-                printWindow.print();
-                printWindow.close();
-            }, 500);
+            const printWin = window.open('', '_blank');
+            let table = `
+                <html><head><title>Listado Rol de Combate</title>
+                <style>
+                    body { font-family: sans-serif; padding: 20px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 10px; }
+                    th { background: #f0f0f0; font-weight: bold; text-transform: uppercase; }
+                    h1 { font-size: 18px; margin-bottom: 20px; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 5px; }
+                    @media print { @page { size: landscape; margin: 1cm; } }
+                </style></head><body>
+                <h1>Listado de Cadetes - Rol de Combate</h1>
+                <table>
+                    <thead><tr>${selectedCols.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+                    <tbody>${students.map(s => `<tr>${selectedCols.map(c => `<td>${s[c] || ''}</td>`).join('')}</tr>`).join('')}</tbody>
+                </table>
+                </body></html>`;
+            printWin.document.write(table);
+            printWin.document.close();
+            setTimeout(() => { printWin.print(); printWin.close(); }, 500);
         }
 
-        // --- MANEJO DE MODALES ESTÁNDAR ---
-        function openReportModal() {
-            const container = document.getElementById('report-container');
-            const incomplete = students.filter(s => getCompleteness(s) < 100);
-            container.innerHTML = incomplete.length === 0 ? `<p class="p-10 text-center font-bold text-emerald-600">Todo completo.</p>` : 
-                incomplete.map(s => {
-                    const missing = criticalFields.filter(f => !s[f] || String(s[f]).trim() === '');
-                    return `<div class="p-3 border rounded-xl bg-amber-50/20 text-xs"><strong>${s.Apellido}</strong> - Faltan: ${missing.join(', ')}</div>`;
-                }).join('');
-            document.getElementById('modal-report').classList.add('active');
-            initIcons();
-        }
-
+        // --- FUNCIONES ESTÁNDAR ---
         function openEditModal(id) {
             const s = students.find(x => x.id === id);
             if (!s) return;
             editingId = id;
             const container = document.getElementById('edit-fields-container');
-            const keys = Object.keys(s).filter(k => k !== 'id');
-            container.innerHTML = keys.map(key => `
+            container.innerHTML = Object.keys(s).filter(k => k !== 'id').map(key => `
                 <div>
                     <label class="block text-[10px] font-bold uppercase mb-1 text-slate-400">${key}</label>
                     <input type="text" name="${key}" value="${s[key]}" class="w-full bg-slate-50 border p-2 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500">
@@ -611,12 +485,12 @@
             document.getElementById('modal-edit').classList.add('active');
         }
 
-        function deleteStudent(id) { if (confirm("¿Eliminar?")) { students = students.filter(s => s.id !== id); render(); } }
         function openAddModal() { document.getElementById('modal-add').classList.add('active'); }
         function openHelpModal() { document.getElementById('modal-help').classList.add('active'); }
         function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); }
 
-        // --- INICIALIZACIÓN ---
+        function deleteStudent(id) { if (confirm("¿Eliminar?")) { students = students.filter(s => s.id !== id); render(); } }
+
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('search-input')?.addEventListener('input', (e) => { searchTerm = e.target.value; render(); });
             document.getElementById('filter-year')?.addEventListener('change', (e) => { filterYear = e.target.value; render(); });
@@ -631,21 +505,19 @@
                 render();
             });
 
-            document.getElementById('form-add')?.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const data = { id: Math.random().toString(36).substr(2, 9) };
-                new FormData(e.target).forEach((v, k) => data[k] = v);
-                students = [data, ...students];
-                closeModals();
-                render();
-            });
-
-            const csvUpload = document.getElementById('csv-upload');
-            if (csvUpload) {
-                csvUpload.addEventListener('change', (e) => {
+            const csvInput = document.getElementById('csv-upload');
+            if (csvInput) {
+                csvInput.addEventListener('change', (e) => {
                     const reader = new FileReader();
-                    reader.onload = (ev) => { students = [...parseCSV(ev.target.result, "Local"), ...students]; render(); };
-                    reader.readAsText(e.target.files[0]);
+                    reader.onload = (ev) => {
+                        // USAR ISO-8859-1 para archivos de Excel Español (Ñ y acentos)
+                        const decodedText = ev.target.result;
+                        students = [...parseCSV(decodedText, "Local"), ...students];
+                        render();
+                        alert("Importado con éxito.");
+                    };
+                    // Detectar si el archivo local requiere lectura especial
+                    reader.readAsText(e.target.files[0], 'ISO-8859-1');
                 });
             }
             fetchFromSheets();
@@ -655,10 +527,10 @@
             if (students.length === 0) return;
             const headers = Object.keys(students[0]).filter(k => k !== 'id');
             const csvRows = [headers.join(','), ...students.map(row => headers.map(h => `"${row[h] || ''}"`).join(','))];
-            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8' });
+            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=ISO-8859-1' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `ROL_COMBATE.csv`;
+            link.download = `ROL_COMBATE_REPORTE.csv`;
             link.click();
         }
         function nextPage() { currentPage++; render(); }
