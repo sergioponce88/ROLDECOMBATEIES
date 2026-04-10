@@ -48,7 +48,7 @@
                     <div id="sync-status" class="flex items-center gap-2 text-sm text-slate-500">
                         <span class="flex items-center gap-1 text-slate-400 italic text-xs">
                             <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> 
-                            Normalizando base de datos...
+                            Vinculando datos inteligentes...
                         </span>
                     </div>
                 </div>
@@ -57,7 +57,7 @@
             <div class="flex flex-wrap gap-2 w-full lg:w-auto">
                 <button onclick="fetchFromSheets()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 px-4 py-2.5 rounded-xl transition font-medium shadow-sm active:scale-95 text-slate-700">
                     <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
-                    Actualizar Cloud
+                    Sincronizar Cloud
                 </button>
                 <button onclick="openCustomListModal()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-4 py-2.5 rounded-xl transition font-semibold border border-indigo-100 shadow-sm active:scale-95">
                     <i data-lucide="layout-list" class="w-4 h-4"></i>
@@ -304,23 +304,36 @@
         let editingId = null;
         let allHeaders = [];
 
-        // Función para normalizar títulos (elimina dobles espacios y limpia extremos)
-        function norm(str) {
+        // --- MOTOR DE NORMALIZACIÓN INTELIGENTE ---
+        // Limpia el texto de espacios extra, paréntesis y acentos para facilitar la búsqueda
+        function smartNorm(str) {
             if (!str) return '';
-            return str.trim().replace(/\s+/g, ' ');
+            return str.trim()
+                .toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quitar acentos
+                .replace(/\s+/g, ' ')                             // Espacios únicos
+                .replace(/[()]/g, '');                            // Quitar paréntesis
         }
 
-        // Función para formatear fechas de Excel/CSV
+        // Función para formatear fechas de Excel/CSV y limpiar "ceros"
         function formatVal(val) {
             if (!val) return '---';
             let s = String(val).trim();
-            // Detectar formato AAAA-MM-DD 00:00:00
+            // Detectar formato AAAA-MM-DD 00:00:00 común en Sheets/Excel
             if (s.match(/^\d{4}-\d{2}-\d{2}/)) {
                 let parts = s.split(' ')[0].split('-');
                 return `${parts[2]}/${parts[1]}/${parts[0]}`;
             }
-            if (s === '00:00:00' || s === '0' || s === 'NO') return '---';
+            if (s === '00:00:00' || s === '0' || s === 'no' || s === 'NO') return '---';
             return s.toUpperCase();
+        }
+
+        // Busca el valor de un campo usando lógica de normalización
+        function getSmartValue(student, fieldName) {
+            const normSearch = smartNorm(fieldName);
+            // Intentar encontrar el valor comparando el nombre del campo normalizado
+            const key = Object.keys(student).find(k => smartNorm(k) === normSearch);
+            return key ? student[key] : '';
         }
 
         function initIcons() { if (window.lucide) lucide.createIcons(); }
@@ -340,10 +353,10 @@
                     allData = [...allData, ...parsed];
                 }
                 if (allData.length > 0) students = allData;
-                if (statusEl) statusEl.innerHTML = `<span class="text-emerald-600 font-black text-[10px]">BASE NORMALIZADA Y SINCRONIZADA: ${new Date().toLocaleTimeString()}</span>`;
+                if (statusEl) statusEl.innerHTML = `<span class="text-emerald-600 font-black text-[10px]">VINCULACIÓN INTELIGENTE ACTIVA: ${new Date().toLocaleTimeString()}</span>`;
                 render();
             } catch (e) {
-                if (statusEl) statusEl.innerHTML = `<span class="text-rose-500 font-bold italic text-[10px]">ERROR DE CONEXIÓN</span>`;
+                if (statusEl) statusEl.innerHTML = `<span class="text-rose-500 font-bold italic text-[10px]">ERROR DE CARGA</span>`;
             } finally {
                 if (btn) btn.classList.remove('animate-spin');
                 initIcons();
@@ -356,10 +369,9 @@
             
             const firstLine = lines[0];
             const rawHeaders = firstLine.split(',').map(h => h.trim().replace(/"/g, ''));
-            const normalizedHeaders = rawHeaders.map(h => norm(h));
             
-            // Actualizar headers globales (normalizados)
-            normalizedHeaders.forEach(h => { if(!allHeaders.includes(h)) allHeaders.push(h); });
+            // Guardar headers globales únicos para el generador de reportes
+            rawHeaders.forEach(h => { if(!allHeaders.includes(h)) allHeaders.push(h); });
 
             const dataRows = lines.slice(1).map(row => {
                 return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
@@ -367,10 +379,11 @@
 
             return dataRows.map(row => {
                 const obj = {};
-                normalizedHeaders.forEach((h, i) => {
-                    // Unificar campo de Sangre
+                rawHeaders.forEach((h, i) => {
+                    // Unificar automáticamente Grupo Sanguineo y Grupo Sangre
                     let key = h;
-                    if (h === 'Grupo Sanguineo' || h === 'Factor Sangre') key = 'Grupo Sangre';
+                    const hNorm = smartNorm(h);
+                    if (hNorm === 'grupo sanguineo' || hNorm === 'factor sangre') key = 'Grupo Sangre';
                     obj[key] = row[i] || '';
                 });
                 obj.id = Math.random().toString(36).substr(2, 9);
@@ -383,7 +396,7 @@
 
         function getCompleteness(student) {
             const completed = criticalFields.filter(f => {
-                const val = student[f];
+                const val = getSmartValue(student, f);
                 return val && String(val).trim() !== '' && val !== '-' && val !== '0' && val !== 'NO' && val !== '00:00:00';
             }).length;
             return (completed / criticalFields.length) * 100;
@@ -391,7 +404,7 @@
 
         function render() {
             const filtered = students.filter(s => {
-                const searchStr = `${s.Nombre} ${s.Apellido} ${s.DNI} ${s.Prontuario} ${s.LOCALIDAD3}`.toLowerCase();
+                const searchStr = `${s.Nombre} ${s.Apellido} ${s.DNI} ${getSmartValue(s, 'Prontuario')} ${getSmartValue(s, 'LOCALIDAD3')}`.toLowerCase();
                 const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
                 const matchesYear = filterYear === 'Todos' || (s['Año'] && s['Año'].includes(filterYear.split(' ')[0]));
                 const isMissing = showIncompleteOnly ? getCompleteness(s) < 100 : true;
@@ -425,16 +438,16 @@
                         <tr class="hover:bg-slate-50 group border-b border-slate-50 transition-colors">
                             <td class="p-5">
                                 <div class="font-bold text-slate-900 uppercase text-xs">${s.Apellido || 'S/A'}, ${s.Nombre || 'S/N'}</div>
-                                <div class="text-[10px] text-slate-400 mt-1 font-mono tracking-tighter">DNI: ${s.DNI || '---'} | Pront: ${s.Prontuario || '---'}</div>
+                                <div class="text-[10px] text-slate-400 mt-1 font-mono tracking-tighter">DNI: ${s.DNI || '---'} | Pront: ${getSmartValue(s, 'Prontuario') || '---'}</div>
                             </td>
                             <td class="p-5 text-center">
                                 <span class="px-2 py-0.5 rounded text-[10px] font-black border ${yearClass}">${s['Año'] || 'S/D'}</span>
-                                <div class="text-[9px] text-slate-400 font-bold mt-1 uppercase">${s.UR || ''}</div>
+                                <div class="text-[9px] text-slate-400 font-bold mt-1 uppercase">${getSmartValue(s, 'UR') || ''}</div>
                             </td>
                             <td class="p-5">
                                 <div class="flex items-center gap-2">
-                                    <span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded text-[10px] font-black border border-rose-100">${s['Grupo Sangre'] || '---'}</span>
-                                    <span class="text-[10px] text-slate-400 italic">${s.Edad || '?'} años</span>
+                                    <span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded text-[10px] font-black border border-rose-100">${getSmartValue(s, 'Grupo Sangre') || '---'}</span>
+                                    <span class="text-[10px] text-slate-400 italic">${getSmartValue(s, 'Edad') || '?'} años</span>
                                 </div>
                             </td>
                             <td class="p-5 min-w-[120px]">
@@ -460,7 +473,7 @@
             initIcons();
         }
 
-        // --- REPORTE INDIVIDUAL INTEGRAL ---
+        // --- REPORTE INDIVIDUAL INTEGRAL (CON BÚSQUEDA INTELIGENTE) ---
         function openPrintIndividualModal(id) {
             const s = students.find(x => x.id === id);
             if (!s) return;
@@ -470,21 +483,26 @@
             let keysProcessed = new Set(['id']);
 
             DATA_SECTIONS.forEach(section => {
-                let fieldsInThisSection = section.fields.filter(f => s.hasOwnProperty(norm(f)));
-                if (fieldsInThisSection.length > 0) {
+                // Buscamos campos que coincidan con la sección
+                let fieldsToShow = [];
+                section.fields.forEach(f => {
+                    const studentKey = Object.keys(s).find(k => smartNorm(k) === smartNorm(f));
+                    if (studentKey) {
+                        fieldsToShow.push({ label: f, value: s[studentKey] });
+                        keysProcessed.add(studentKey);
+                    }
+                });
+
+                if (fieldsToShow.length > 0) {
                     sectionsHtml += `
                     <div class="mb-5 break-inside-avoid">
                         <h3 class="bg-slate-900 text-white px-3 py-1 text-[10px] font-black uppercase tracking-widest border-b-2 border-slate-900 mb-3">${section.name}</h3>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-[10px]">
-                            ${fieldsInThisSection.map(f => {
-                                let fNorm = norm(f);
-                                keysProcessed.add(fNorm);
-                                return `
+                            ${fieldsToShow.map(f => `
                                 <div class="border-b border-slate-50 pb-0.5">
-                                    <p class="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">${fNorm}</p>
-                                    <p class="text-slate-900 font-bold uppercase truncate text-[9px]">${formatVal(s[fNorm])}</p>
-                                </div>`;
-                            }).join('')}
+                                    <p class="text-[7px] font-black text-slate-400 uppercase leading-none mb-1">${f.label}</p>
+                                    <p class="text-slate-900 font-bold uppercase truncate text-[9px]">${formatVal(f.value)}</p>
+                                </div>`).join('')}
                         </div>
                     </div>`;
                 }
@@ -499,7 +517,7 @@
                         </div>
                         <div class="text-right">
                             <p class="text-xl font-black text-slate-900 uppercase">${s.Apellido}, ${s.Nombre}</p>
-                            <p class="text-[10px] font-mono font-black text-slate-500 mt-1 uppercase tracking-tight italic">DNI: ${s.DNI || '---'} | PRONTUARIO: ${s.Prontuario || '---'}</p>
+                            <p class="text-[10px] font-mono font-black text-slate-500 mt-1 uppercase tracking-tight italic">DNI: ${s.DNI || '---'} | PRONTUARIO: ${getSmartValue(s, 'Prontuario') || '---'}</p>
                             <p class="text-[8px] text-slate-400 mt-1 font-bold uppercase tracking-widest italic">FECHA EMISIÓN: ${new Date().toLocaleDateString()}</p>
                         </div>
                     </div>
@@ -531,8 +549,16 @@
             let keysProcessed = new Set(['id']);
 
             DATA_SECTIONS.forEach(section => {
-                let fieldsInThisSection = section.fields.filter(f => s.hasOwnProperty(norm(f)));
-                if (fieldsInThisSection.length > 0) {
+                let sectionFields = [];
+                section.fields.forEach(f => {
+                    const studentKey = Object.keys(s).find(k => smartNorm(k) === smartNorm(f));
+                    if (studentKey) {
+                        sectionFields.push({ key: studentKey, label: f });
+                        keysProcessed.add(studentKey);
+                    }
+                });
+
+                if (sectionFields.length > 0) {
                     sectionsHtml += `
                     <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-${section.color}-300">
                         <div class="flex items-center gap-3 mb-6 border-b border-${section.color}-100 pb-3">
@@ -540,15 +566,11 @@
                             <h3 class="font-black text-xs text-slate-700 uppercase tracking-widest">${section.name}</h3>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                            ${fieldsInThisSection.map(f => {
-                                let fNorm = norm(f);
-                                keysProcessed.add(fNorm);
-                                return `
+                            ${sectionFields.map(f => `
                                 <div>
-                                    <label class="block text-[9px] font-black uppercase mb-1 text-slate-400 tracking-wider ml-1">${fNorm}</label>
-                                    <input type="text" name="${fNorm}" value="${s[fNorm]}" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-xs outline-none focus:ring-4 focus:ring-${section.color}-500/10 focus:border-${section.color}-500 transition-all font-bold uppercase shadow-inner">
-                                </div>`;
-                            }).join('')}
+                                    <label class="block text-[9px] font-black uppercase mb-1 text-slate-400 tracking-wider ml-1">${f.label}</label>
+                                    <input type="text" name="${f.key}" value="${s[f.key]}" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-xs outline-none focus:ring-4 focus:ring-${section.color}-500/10 focus:border-${section.color}-500 transition-all font-bold uppercase shadow-inner">
+                                </div>`).join('')}
                         </div>
                     </div>`;
                 }
@@ -667,7 +689,7 @@
                     reader.onload = (ev) => {
                         students = [...parseCSV(ev.target.result, "Excel Local"), ...students];
                         render();
-                        alert("Datos importados con éxito. Se han corregido las tildes y las fechas.");
+                        alert("Datos importados con éxito. La vinculación inteligente ha normalizado los campos.");
                     };
                     reader.readAsText(e.target.files[0], 'ISO-8859-1');
                 });
@@ -682,7 +704,7 @@
             const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=ISO-8859-1' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `ROL_NORMALIZADO_${new Date().toISOString().slice(0,10)}.csv`;
+            link.download = `ROL_VINCULADO_${new Date().toISOString().slice(0,10)}.csv`;
             link.click();
         }
         
